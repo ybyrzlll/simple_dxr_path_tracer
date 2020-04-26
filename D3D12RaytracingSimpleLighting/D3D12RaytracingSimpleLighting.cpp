@@ -104,7 +104,8 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 
     // Setup materials.
     {
-        m_cubeCB.albedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+        //m_cubeCB.albedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		m_cubeCB = { XMFLOAT4(0.9f, 0.9f, 0.9f, 1.0f), 0.25f, 1, 0.4f, 50, 1 };
     }
 
     // Setup camera.
@@ -817,13 +818,13 @@ void D3D12RaytracingSimpleLighting::OnKeyDown(UINT8 key)
 	break;
 	case VK_LEFT:
 	{
-		m_eye = DirectX::XMVectorSetX(m_eye, XMVectorGetX(m_eye) + fDelta);
+		m_eye = DirectX::XMVectorSetX(m_eye, XMVectorGetX(m_eye) - fDelta);
 		//g_v4LightPosition.x -= fDelta;
 	}
 	break;
 	case VK_RIGHT:
 	{
-		m_eye = DirectX::XMVectorSetX(m_eye, XMVectorGetX(m_eye) - fDelta);
+		m_eye = DirectX::XMVectorSetX(m_eye, XMVectorGetX(m_eye) + fDelta);
 		//g_v4LightPosition.x += fDelta;
 	}
     default:

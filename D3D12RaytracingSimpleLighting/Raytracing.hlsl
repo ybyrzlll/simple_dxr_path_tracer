@@ -23,6 +23,65 @@ StructuredBuffer<Vertex> Vertices : register(t2, space0);
 ConstantBuffer<SceneConstantBuffer> g_sceneCB : register(b0);
 ConstantBuffer<CubeConstantBuffer> g_cubeCB : register(b1);
 
+
+//***************************************************************************
+//****************------ Utility functions -------***************************
+//***************************************************************************
+
+// Retrieve hit world position.
+float3 HitWorldPosition()
+{
+	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
+}
+
+// Diffuse lighting calculation.
+float CalculateDiffuseCoefficient(in float3 hitPosition, in float3 incidentLightRay, in float3 normal)
+{
+	float fNDotL = saturate(dot(-incidentLightRay, normal));
+	return fNDotL;
+}
+
+// Phong lighting specular component
+float4 CalculateSpecularCoefficient(in float3 hitPosition, in float3 incidentLightRay, in float3 normal, in float specularPower)
+{
+	float3 reflectedLightRay = normalize(reflect(incidentLightRay, normal));
+	return pow(saturate(dot(reflectedLightRay, normalize(-WorldRayDirection()))), specularPower);
+}
+
+
+// Phong lighting model = ambient + diffuse + specular components.
+float4 CalculatePhongLighting(in float4 albedo, in float3 normal, in bool isInShadow, in float diffuseCoef = 1.0, in float specularCoef = 1.0, in float specularPower = 50)
+{
+	float3 hitPosition = HitWorldPosition();
+	float3 lightPosition = g_sceneCB.lightPosition.xyz;
+	float shadowFactor = isInShadow ? InShadowRadiance : 1.0;
+	float3 incidentLightRay = normalize(hitPosition - lightPosition);
+
+	// Diffuse component.
+	float4 lightDiffuseColor = g_sceneCB.lightDiffuseColor;
+	float Kd = CalculateDiffuseCoefficient(hitPosition, incidentLightRay, normal);
+	float4 diffuseColor = shadowFactor * diffuseCoef * Kd * lightDiffuseColor * albedo;
+
+	// Specular component.
+	float4 specularColor = float4(0, 0, 0, 0);
+	if (!isInShadow)
+	{
+		float4 lightSpecularColor = float4(1, 1, 1, 1);
+		float4 Ks = CalculateSpecularCoefficient(hitPosition, incidentLightRay, normal, specularPower);
+		specularColor = specularCoef * Ks * lightSpecularColor;
+	}
+
+	// Ambient component.
+	// Fake AO: Darken faces with normal facing downwards/away from the sky a little bit.
+	float4 ambientColor = g_sceneCB.lightAmbientColor;
+	float4 ambientColorMin = g_sceneCB.lightAmbientColor - 0.1;
+	float4 ambientColorMax = g_sceneCB.lightAmbientColor;
+	float a = 1 - saturate(dot(normal, float3(0, -1, 0)));
+	ambientColor = albedo * lerp(ambientColorMin, ambientColorMax, a);
+
+	return ambientColor + diffuseColor + specularColor;
+}
+
 // Load three 16 bit indices from a byte addressed buffer.
 uint3 Load3x16BitIndices(uint offsetBytes)
 {
@@ -61,11 +120,7 @@ struct RayPayload
     float4 color;
 };
 
-// Retrieve hit world position.
-float3 HitWorldPosition()
-{
-    return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
-}
+
 
 // Retrieve attribute at a hit position interpolated from vertex attributes using the hit's barycentrics.
 float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttributes attr)
@@ -74,6 +129,15 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
         attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
         attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
+
+//***************************************************************************
+//*****------ TraceRay wrappers for radiance and shadow rays. -------********
+//***************************************************************************
+
+
+//***************************************************************************
+//********************------ Ray gen shader.. -------************************
+//***************************************************************************
 
 // Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
 inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 direction)
@@ -154,10 +218,13 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
     // as all the per-vertex normals are the same and match triangle's normal in this sample. 
     float3 triangleNormal = HitAttribute(vertexNormals, attr);
 
-    float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal);
-    float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
+    //float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal);
+    //float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
 
-    payload.color = color;
+	//float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, attr.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
+	float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, triangleNormal, false, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
+
+    payload.color = phongColor;
 }
 
 [shader("miss")]

@@ -33,6 +33,14 @@ struct SceneConstantBuffer
 struct CubeConstantBuffer
 {
     XMFLOAT4 albedo;
+	float reflectanceCoef;
+	float diffuseCoef;
+	float specularCoef;
+	float specularPower;
+	float stepScale;                      // Step scale for ray marching of signed distance primitives. 
+										  // - Some object transformations don't preserve the distances and 
+										  //   thus require shorter steps.
+	XMFLOAT3 padding;
 };
 
 struct Vertex
@@ -41,5 +49,7 @@ struct Vertex
     XMFLOAT3 texture;
 	XMFLOAT3 normal;
 };
+
+static const float InShadowRadiance = 0.35f;
 
 #endif // RAYTRACINGHLSLCOMPAT_H
