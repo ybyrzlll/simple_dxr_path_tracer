@@ -89,7 +89,7 @@ void D3D12RaytracingSimpleLighting::UpdateCameraMatrices()
     auto frameIndex = m_deviceResources->GetCurrentFrameIndex();
 
     m_sceneCB[frameIndex].cameraPosition = m_eye;
-    float fovAngleY = 90.0f;
+    float fovAngleY = 45.0f;
     XMMATRIX view = XMMatrixLookAtLH(m_eye, m_at, m_up);
     XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(fovAngleY), m_aspectRatio, 1.0f, 125.0f);
     XMMATRIX viewProj = view * proj;
