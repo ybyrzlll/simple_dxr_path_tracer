@@ -63,7 +63,18 @@
 #include <atlconv.h> //for T2A
 #include <fstream>  //for ifstream
 
+//mine
+#include "Buffer.h"
+#include "Model.h"
+#include "rtrt.h"
+
+
 using namespace std;
 using namespace Microsoft;
 using namespace Microsoft::WRL;
 using namespace DirectX;
+
+#define RELEASE_SAFE(ptr) { if (ptr != nullptr) { ptr->Release(); ptr = nullptr; } }
+#define RELEASE_EXPLICIT(ptr) { if (ptr != nullptr) { ptr->Release(); ptr = nullptr; } else { BREAK("Explicit release on object which has not been initialized."); } }
+#define RELEASE RELEASE_SAFE
+

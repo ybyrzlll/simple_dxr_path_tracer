@@ -22,6 +22,9 @@
     <Filter Include="Assets\Shaders\Util">
       <UniqueIdentifier>{87b45108-4083-4b05-a52d-914447b5fc90}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\helper">
+      <UniqueIdentifier>{fe17035d-8110-4169-9f7a-6858450f1c5b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -57,6 +60,15 @@
     <ClInclude Include="RaytracingHlslCompat.h">
       <Filter>Assets\Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Assets\helper</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>Assets\helper</Filter>
+    </ClInclude>
+    <ClInclude Include="rtrt.h">
+      <Filter>Assets\helper</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -77,10 +89,20 @@
     <ClCompile Include="D3D12RaytracingSimpleLighting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Buffer.cpp">
+      <Filter>Assets\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Assets\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="rtrt.cpp">
+      <Filter>Assets\helper</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="readme.md" />
     <None Include="packages.config" />
+    <None Include="util.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Raytracing.hlsl" />

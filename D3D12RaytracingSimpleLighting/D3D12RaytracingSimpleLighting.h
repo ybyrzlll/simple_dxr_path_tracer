@@ -20,7 +20,9 @@ namespace GlobalRootSignatureParams {
         OutputViewSlot = 0,
         AccelerationStructureSlot,
         SceneConstantSlot,
-        VertexBuffersSlot,
+		Meshes,
+		Vertices,
+		Indices,
         Count 
     };
 }
@@ -46,6 +48,7 @@ class D3D12RaytracingSimpleLighting : public DXSample
     };
 
 public:
+
     D3D12RaytracingSimpleLighting(UINT width, UINT height, std::wstring name);
 
     // IDeviceNotify
@@ -106,13 +109,23 @@ private:
         ComPtr<ID3D12Resource> resource;
         D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle;
         D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle;
+
+		UINT count;
     };
-    D3DBuffer m_indexBuffer;
-    D3DBuffer m_vertexBuffer;
+    vector<D3DBuffer> m_indexBuffer;
+	vector<D3DBuffer> m_vertexBuffer;
+
+	rtrt::Model model;
+
+	std::vector<Mesh> meshes;
+
+	rtrt::Buffer* meshes_buffer = nullptr;
+	rtrt::Buffer* all_vertices_buffer = nullptr;
+	rtrt::Buffer* all_indices_buffer = nullptr;
 
     // Acceleration structure
-    ComPtr<ID3D12Resource> m_bottomLevelAccelerationStructure;
-    ComPtr<ID3D12Resource> m_topLevelAccelerationStructure;
+	rtrt::AccelerationStructure m_bottomLevelAccelerationStructure;
+	rtrt::AccelerationStructure m_topLevelAccelerationStructure;
 
     // Raytracing output
     ComPtr<ID3D12Resource> m_raytracingOutput;
@@ -156,6 +169,8 @@ private:
     void CreateDescriptorHeap();
     void CreateRaytracingOutputResource();
     void BuildGeometry();
+	void BuildPlane();
+	void BuildSphere();
     void BuildAccelerationStructures();
     void BuildShaderTables();
     void SelectRaytracingAPI(RaytracingAPI type);
@@ -166,5 +181,5 @@ private:
     UINT CreateBufferSRV(D3DBuffer* buffer, UINT numElements, UINT elementSize);
     WRAPPED_GPU_POINTER CreateFallbackWrappedPointer(ID3D12Resource* resource, UINT bufferNumElements);
 
-	void LoadMeshVertex(const CHAR* pszMeshFileName, UINT& nVertexCnt, Vertex*& ppVertex, Index*& ppIndices);
+	void LoadMeshVertex(const CHAR * pszMeshFileName, UINT & nVertexCnt, vector<Vertex> & ppVertex, vector<Index> & ppIndices);
 };

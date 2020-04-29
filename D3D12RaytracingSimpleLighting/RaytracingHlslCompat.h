@@ -17,9 +17,26 @@
 #else
 using namespace DirectX;
 
+#define CPP_REGISTER_MESHES 1
+#define HLSL_REGISTER_MESHES t1
+
+#define CPP_REGISTER_VERTICES 2
+#define HLSL_REGISTER_VERTICES t2
+
+#define CPP_REGISTER_INDICES 3
+#define HLSL_REGISTER_INDICES t3
+
+
 // Shader will use byte encoding to access indices.
 typedef UINT16 Index;
 #endif
+
+struct Mesh
+{
+	UINT first_idx_vertices;
+	UINT first_idx_indices;
+	UINT material;
+};
 
 struct SceneConstantBuffer
 {

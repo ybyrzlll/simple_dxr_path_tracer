@@ -164,10 +164,13 @@ PrebuildCheck.bat</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Buffer.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="DirectXRaytracingHelper.h" />
     <ClInclude Include="HlslCompat.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="RaytracingHlslCompat.h" />
+    <ClInclude Include="rtrt.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="D3D12RaytracingSimpleLighting.h" />
@@ -177,7 +180,10 @@ PrebuildCheck.bat</Command>
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
+    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="rtrt.cpp" />
     <ClCompile Include="Win32Application.cpp" />
     <ClCompile Include="D3D12RaytracingSimpleLighting.cpp" />
     <ClCompile Include="DXSample.cpp" />
@@ -205,6 +211,7 @@ PrebuildCheck.bat</Command>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="readme.md" />
+    <None Include="util.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\Libraries\D3D12RaytracingFallback\src\FallbackLayer.vcxproj">
