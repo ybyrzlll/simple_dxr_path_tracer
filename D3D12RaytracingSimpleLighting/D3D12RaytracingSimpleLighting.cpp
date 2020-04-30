@@ -459,9 +459,9 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		all_indices.insert(all_indices.end(), model.indices[i].begin(), model.indices[i].end());
 	}
 
-	AllocateUploadBuffer(device, meshes.data(), static_cast<UINT>(all_vertices.size() * sizeof(Mesh)), &all_vertices_buffer->buffer_);
+	AllocateUploadBuffer(device, meshes.data(), static_cast<UINT>(meshes.size() * sizeof(Mesh)), &meshes_buffer->buffer_);
 	AllocateUploadBuffer(device, all_vertices.data(), static_cast<UINT>(all_vertices.size() * sizeof(Vertex)), &all_vertices_buffer->buffer_);
-	AllocateUploadBuffer(device, all_indices.data(), static_cast<UINT>(all_indices.size() * sizeof(Index)), &all_vertices_buffer->buffer_);
+	AllocateUploadBuffer(device, all_indices.data(), static_cast<UINT>(all_indices.size() * sizeof(Index)), &all_indices_buffer->buffer_);
 	
 }
 
@@ -528,6 +528,9 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	LoadMeshVertex(pszMeshFileName, nVertexCnt, vertices, indices);
 	m_indexBuffer[0].count = m_vertexBuffer[0].count = nIndexCnt = nVertexCnt;
 
+	model.vertices.push_back(vertices);
+	model.indices.push_back(indices);
+
 	AllocateUploadBuffer(device, indices.data(), nIndexCnt * sizeof(Index), &m_indexBuffer[0].resource);
 	AllocateUploadBuffer(device, vertices.data(), nVertexCnt * sizeof(Vertex), &m_vertexBuffer[0].resource);
 
@@ -554,6 +557,8 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 	std::vector<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC> build_descs;
 	std::vector<D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO> prebuild_infos;
 
+	m_bottomLevelAccelerationStructure.structures.resize(num_model);
+	m_bottomLevelAccelerationStructure.structure_pointers.resize(num_model);
 	geometryDesc.resize(num_model);
 	build_descs.resize(num_model);
 	prebuild_infos.resize(num_model);
@@ -588,7 +593,6 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		max_size_scratch = max(max_size_scratch, prebuild_infos[i].ScratchDataSizeInBytes);
 	}
 
-	ComPtr<ID3D12Resource> scratchResource;
 	AllocateUAVBuffer(device, max_size_scratch, &m_bottomLevelAccelerationStructure.scratch, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, L"ScratchResource");
 
 	// Allocate resources for acceleration structures.
@@ -618,6 +622,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		m_bottomLevelAccelerationStructure.structure_pointers[i] = CreateFallbackWrappedPointer(m_bottomLevelAccelerationStructure.structures[i], static_cast<UINT>(prebuild_infos[i].ResultDataMaxSizeInBytes) / sizeof(UINT32));
 	}
 
+
 	//Instance Buffer
 	ComPtr<ID3D12Resource> instanceDescs;
 	{
@@ -645,6 +650,8 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 	}
 	
 
+	m_topLevelAccelerationStructure.structures.resize(1);
+	m_topLevelAccelerationStructure.structure_pointers.resize(1);
 
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC topLevelBuildDesc = {};
@@ -681,7 +688,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 	// Top Level Acceleration Structure desc
 	{
 		topLevelBuildDesc.DestAccelerationStructureData = m_topLevelAccelerationStructure.structures[0]->GetGPUVirtualAddress();
-		topLevelBuildDesc.ScratchAccelerationStructureData = scratchResource->GetGPUVirtualAddress();
+		topLevelBuildDesc.ScratchAccelerationStructureData = m_bottomLevelAccelerationStructure.scratch->GetGPUVirtualAddress();
 		topLevelBuildDesc.Inputs.InstanceDescs = instanceDescs->GetGPUVirtualAddress();
 	}
 

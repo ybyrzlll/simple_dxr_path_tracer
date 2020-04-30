@@ -35,7 +35,7 @@ struct Mesh
 {
 	UINT first_idx_vertices;
 	UINT first_idx_indices;
-	UINT material;
+	//UINT material;
 };
 
 struct SceneConstantBuffer
