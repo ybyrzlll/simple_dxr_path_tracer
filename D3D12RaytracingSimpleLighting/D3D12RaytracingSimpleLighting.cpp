@@ -411,8 +411,8 @@ void D3D12RaytracingSimpleLighting::CreateDescriptorHeap()
     // Allocate a heap for 5 descriptors:
     // 4 - vertex and index buffer SRVs
     // 1 - raytracing output texture SRV
-    // 5 - bottom and top level acceleration structure fallback wrapped pointer UAVs
-    descriptorHeapDesc.NumDescriptors = 10; //!!!!!!!
+    // 3 - bottom and top level acceleration structure fallback wrapped pointer UAVs
+    descriptorHeapDesc.NumDescriptors = 8; //!!!!!!!
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     descriptorHeapDesc.NodeMask = 0;
@@ -519,7 +519,7 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\sphere.txt", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\cube.txt", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices;
@@ -692,14 +692,33 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		topLevelBuildDesc.Inputs.InstanceDescs = instanceDescs->GetGPUVirtualAddress();
 	}
 
-	// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-	ID3D12DescriptorHeap *pDescriptorHeaps[] = { m_descriptorHeap.Get() };
-	m_fallbackCommandList->SetDescriptorHeaps(ARRAYSIZE(pDescriptorHeaps), pDescriptorHeaps);
+	std::vector<D3D12_RESOURCE_BARRIER> barriers;
+	barriers.resize(m_bottomLevelAccelerationStructure.structures.size());
+	for (size_t i = 0; i < num_model; i++) {
+		barriers[i] = CD3DX12_RESOURCE_BARRIER::UAV(m_bottomLevelAccelerationStructure.structures[i]);
+	}
+
+	/*ID3D12DescriptorHeap* heaps[1] = {
+	  cbv_srv_uav_heap->GetDescriptorHeap()
+	};
+
+	commandList->SetDescriptorHeaps(1, heaps);*/
 
 	for (size_t i = 0; i < num_model; i++) {
+		/*ID3D12DescriptorHeap* heaps[1] = { m_descriptorHeap.Get() };
+		commandList->SetDescriptorHeaps(1, heaps);*/
+		//device->PrepareCommandLists();?????
+		//ID3D12DescriptorHeap* heaps[1] = { m_descriptorHeap.Get() };
+		//commandList->SetDescriptorHeaps(1, heaps);
+		// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
+		ID3D12DescriptorHeap* pDescriptorHeaps[1] = { m_descriptorHeap.Get() };
+		m_fallbackCommandList->SetDescriptorHeaps(1, pDescriptorHeaps);
 		m_fallbackCommandList->BuildRaytracingAccelerationStructure(&build_descs[i], 0, nullptr);
-		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(m_bottomLevelAccelerationStructure.structures[i]));
+		//m_deviceResources->ExecuteCommandList();
+		//m_deviceResources->WaitForGpu();
 	}
+	commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
+	m_fallbackCommandList->BuildRaytracingAccelerationStructure(&topLevelBuildDesc, 0, nullptr);
 
 	// Kick off acceleration structure construction.
 	m_deviceResources->ExecuteCommandList();
