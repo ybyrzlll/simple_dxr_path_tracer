@@ -321,14 +321,13 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	////float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, attr.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
 	//
 	ShadingData hit = GetShadingData(attr);
-	//float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, false, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
-	float4 test = float4(1.0f, 0.2f, 0.0f, 1.0f);
+	float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, false, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
 
-	float3 hitPosition = HitWorldPosition();
-	float4 diffuseColor = CalculateDiffuseLighting(hitPosition, hit.normal);
-	float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
+	//float3 hitPosition = HitWorldPosition();
+	//float4 diffuseColor = CalculateDiffuseLighting(hitPosition, hit.normal);
+	//float4 color =  g_sceneCB.lightAmbientColor +diffuseColor ;
 
-    payload.color = test;
+    payload.color = phongColor;
 }
 
 [shader("miss")]

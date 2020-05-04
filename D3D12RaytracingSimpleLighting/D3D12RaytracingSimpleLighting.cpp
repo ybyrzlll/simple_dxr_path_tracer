@@ -480,7 +480,7 @@ void D3D12RaytracingSimpleLighting::BuildPlane()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\plane.txt", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\cube.txt", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices ;
@@ -519,7 +519,7 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\cube.txt", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\sphere.txt", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices;
@@ -568,7 +568,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		geometryDesc[i].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 		geometryDesc[i].Triangles.IndexBuffer = m_indexBuffer[i].resource->GetGPUVirtualAddress();
 		geometryDesc[i].Triangles.IndexCount = static_cast<UINT>(m_indexBuffer[i].resource->GetDesc().Width) / sizeof(Index);
-		geometryDesc[i].Triangles.IndexFormat = DXGI_FORMAT_R16_UINT;
+		geometryDesc[i].Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
 		geometryDesc[i].Triangles.Transform3x4 = 0;
 		geometryDesc[i].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 		geometryDesc[i].Triangles.VertexCount = static_cast<UINT>(m_vertexBuffer[i].resource->GetDesc().Width) / sizeof(Vertex);
