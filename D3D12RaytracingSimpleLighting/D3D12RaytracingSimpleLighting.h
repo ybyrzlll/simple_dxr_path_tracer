@@ -66,7 +66,7 @@ public:
 
 private:
     static const UINT FrameCount = 3;
-	static const UINT ModelCount = 3;
+	static const UINT ModelCount = 2;
 
     // We'll allocate space for several of these and they will need to be padded for alignment.
     static_assert(sizeof(SceneConstantBuffer) < D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, "Checking the size here.");
@@ -184,4 +184,5 @@ private:
     WRAPPED_GPU_POINTER CreateFallbackWrappedPointer(ID3D12Resource* resource, UINT bufferNumElements);
 
 	void LoadMeshVertex(const CHAR * pszMeshFileName, UINT & nVertexCnt, vector<Vertex> & ppVertex, vector<Index> & ppIndices);
+	vector<string> splitStr(string& str, char delim);
 };

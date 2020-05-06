@@ -133,7 +133,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 		XMFLOAT4 lightAmbientColor;
 		XMFLOAT4 lightDiffuseColor;
 
-		lightPosition = XMFLOAT4(0.0f, 1.8f, -3.0f, 0.0f);
+		lightPosition = XMFLOAT4(0.0f, 1.8f, -1.0f, 0.0f);
 		m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
 		lightAmbientColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -435,7 +435,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	//创建作为AC的顶点数据buffer
 	BuildPlane();
 	BuildCube();
-	BuildSphere();
+	//BuildSphere();
 
 	//创建作为shader使用的顶点数据buffer
 
@@ -480,7 +480,7 @@ void D3D12RaytracingSimpleLighting::BuildPlane()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\plane.txt", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\plane.obj", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices;
@@ -519,7 +519,7 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\sphere.txt", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\cube.txt", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices;
@@ -556,7 +556,7 @@ void D3D12RaytracingSimpleLighting::BuildCube()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\cube.txt", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\sphere32.obj", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices;
@@ -663,35 +663,36 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 
 
 	//Instance Buffer
-	UINT NumInstance = 4;
+	UINT NumInstance = 2;
 	ComPtr<ID3D12Resource> instanceDescs;
 	{
 		vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instanceDesc;
 		instanceDesc.resize(NumInstance);
 		
 		//plane
-		instanceDesc[0].Transform[1][3] = -3;
-		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
+		instanceDesc[0].Transform[1][3] = -2.5;
+		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 3;
 		instanceDesc[0].InstanceMask = 1;
 
 		//cube
-		instanceDesc[1].Transform[0][3] = 3;
+		instanceDesc[1].Transform[1][3] = -1;
 		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 1;
 		instanceDesc[1].InstanceMask = 1;
 
 		//sphere
-		instanceDesc[2].Transform[0][0] = instanceDesc[2].Transform[1][1] = instanceDesc[2].Transform[2][2] = instanceDesc[2].Transform[3][3] = 1;
-		instanceDesc[2].InstanceMask = 1;
+		//instanceDesc[2].Transform[0][3] = -3;
+		//instanceDesc[2].Transform[0][0] = instanceDesc[2].Transform[1][1] = instanceDesc[2].Transform[2][2] = instanceDesc[2].Transform[3][3] = 1;
+		//instanceDesc[2].InstanceMask = 1;
 
-		instanceDesc[3].Transform[0][3] = -3;
-		instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 1;
-		instanceDesc[3].InstanceMask = 1;
+		////instanceDesc[3].Transform[0][3] = -3;
+		//instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 1;
+		//instanceDesc[3].InstanceMask = 1;
 
 		//指定实例对应的BLAS
 		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
 		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
-		instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
-		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		/*instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];*/
 
 		UINT64 bufferSize = static_cast<UINT64>(instanceDesc.size() * sizeof(instanceDesc[0]));
 		AllocateUploadBuffer(device, instanceDesc.data(), bufferSize, &instanceDescs, L"InstanceDescs");
@@ -884,6 +885,18 @@ void D3D12RaytracingSimpleLighting::OnKeyDown(UINT8 key)
 	case '3': // DirectX Raytracing
 		SelectRaytracingAPI(RaytracingAPI::DirectXRaytracing);
 		break;
+	case 'W':
+	{
+		m_eye = DirectX::XMVectorSetZ(m_eye, XMVectorGetZ(m_eye) + fDelta);
+		//g_v4LightPosition.y += fDelta;
+	}
+	break;
+	case 'S':
+	{
+		m_eye = DirectX::XMVectorSetZ(m_eye, XMVectorGetZ(m_eye) - fDelta);
+		//g_v4LightPosition.y -= fDelta;
+	}
+	break;
 	case VK_UP:
 	{
 		m_eye = DirectX::XMVectorSetY(m_eye, XMVectorGetY(m_eye) + fDelta);
@@ -1223,46 +1236,109 @@ WRAPPED_GPU_POINTER D3D12RaytracingSimpleLighting::CreateFallbackWrappedPointer(
 	return m_fallbackDevice->GetWrappedPointerSimple(descriptorHeapIndex, resource->GetGPUVirtualAddress());
 }
 
-void D3D12RaytracingSimpleLighting::LoadMeshVertex(const CHAR * pszMeshFileName, UINT & nVertexCnt, vector<Vertex> & ppVertex, vector<Index> & ppIndices)
-{
-	std::ifstream fin;
-	char input;
-
-	{
-		fin.open(pszMeshFileName);
-		if (fin.fail())
-		{
-			//throw CGRSCOMException(E_FAIL);
+std::vector<std::string> D3D12RaytracingSimpleLighting::splitStr(std::string& str, char delim) {
+	std::stringstream ss(str);
+	std::string token;
+	std::vector<std::string> splitString;
+	while (std::getline(ss, token, delim)) {
+		if (token == "") {
+			//If token is empty just write 0 it will result in a -1 index
+			//Since that index number is nonsensical you can catch it pretty easily later
+			splitString.push_back("0");
 		}
-		fin.get(input);
-		while (input != ':')
-		{
-			fin.get(input);
-		}
-		fin >> nVertexCnt;
-
-		fin.get(input);
-		while (input != ':')
-		{
-			fin.get(input);
-		}
-		fin.get(input);
-		fin.get(input);
-
-		ppVertex.resize(nVertexCnt);
-		ppIndices.resize(nVertexCnt);
-
-		for (UINT i = 0; i < nVertexCnt; i++)
-		{
-			fin >> ppVertex[i].position.x >> ppVertex[i].position.y >> ppVertex[i].position.z;
-			//ppVertex[i].position.w = 1.0f;
-			fin >> ppVertex[i].texture.x >> ppVertex[i].texture.y;
-			fin >> ppVertex[i].normal.x >> ppVertex[i].normal.y >> ppVertex[i].normal.z;
-
-			ppIndices[i] = static_cast<Index>(i);
+		else {
+			splitString.push_back(token);
 		}
 	}
+	return splitString;
+}
 
+void D3D12RaytracingSimpleLighting::LoadMeshVertex(const CHAR * pszMeshFileName, UINT & nVertexCnt, vector<Vertex> & ppVertex, vector<Index> & ppIndices)
+{
+	//std::ifstream fin;
+	//char input;
+
+	//{
+	//	fin.open(pszMeshFileName);
+	//	if (fin.fail())
+	//	{
+	//		//throw CGRSCOMException(E_FAIL);
+	//	}
+	//	fin.get(input);
+	//	while (input != ':')
+	//	{
+	//		fin.get(input);
+	//	}
+	//	fin >> nVertexCnt;
+
+	//	fin.get(input);
+	//	while (input != ':')
+	//	{
+	//		fin.get(input);
+	//	}
+	//	fin.get(input);
+	//	fin.get(input);
+
+	//	ppVertex.resize(nVertexCnt);
+	//	ppIndices.resize(nVertexCnt);
+
+	//	for (UINT i = 0; i < nVertexCnt; i++)
+	//	{
+	//		fin >> ppVertex[i].position.x >> ppVertex[i].position.y >> ppVertex[i].position.z;
+	//		//ppVertex[i].position.w = 1.0f;
+	//		fin >> ppVertex[i].texture.x >> ppVertex[i].texture.y;
+	//		fin >> ppVertex[i].normal.x >> ppVertex[i].normal.y >> ppVertex[i].normal.z;
+
+	//		ppIndices[i] = static_cast<Index>(i);
+	//	}
+	//}
+
+	std::ifstream file;
+	char input;
+	file.open(pszMeshFileName);
+	std::string line, key, x, y, z;
+	vector<XMFLOAT3> pos, normal, texture;
+	char delimeter = '/';
+	UINT index = 0;
+
+	ppVertex.resize(0);
+	ppIndices.resize(0);
+	while (!file.eof()) {
+		std::getline(file, line);
+		std::istringstream iss(line);
+		iss >> key;
+		if (key == "v") { //Vertex data
+			iss >> x >> y >> z;
+			XMFLOAT3 temp(std::stof(x), std::stof(y), std::stof(z));
+			pos.push_back(temp);
+		}
+		else if (key == "vn") { //Normal data
+			iss >> x >> y >> z;
+			XMFLOAT3 temp(std::stof(x), std::stof(y), std::stof(z));
+			normal.push_back(temp);
+		}
+		else if (key == "vt") { //Texture data
+			iss >> x >> y;
+			XMFLOAT3 temp(std::stof(x), std::stof(y), std::stof(z));
+			texture.push_back(temp);
+		}
+		else if (key == "f") { //index data  v/vt/vn
+			iss >> x >> y >> z;
+			std::vector<std::string> splitX = splitStr(x, delimeter);
+			std::vector<std::string> splitY = splitStr(y, delimeter);
+			std::vector<std::string> splitZ = splitStr(z, delimeter);
+			vector<vector<std::string>> m({ splitX , splitY, splitZ});
+			for (int i = 0; i < 3; ++i) {
+				Vertex temp;
+				temp.position = pos[stoi(m[i][0])-1];
+				temp.normal = normal[stoi(m[i][2])-1];
+				temp.texture = texture[stoi(m[i][1])-1];
+				ppVertex.push_back(temp);
+				ppIndices.push_back(static_cast<Index>(index++));
+			}
+		}
+		nVertexCnt = index;
+	}
 }
 
 // Allocate a descriptor and return its index. 
