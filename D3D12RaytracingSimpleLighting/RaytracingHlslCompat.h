@@ -35,6 +35,15 @@ using namespace DirectX;
 typedef uint32_t Index;
 #endif
 
+// Ray types traced in this sample.
+namespace ModelType {
+	enum Enum {
+		Plane ,  
+		Cube,        
+		Sphere
+	};
+}
+
 struct ProceduralPrimitiveAttributes
 {
 	XMFLOAT3 normal;
