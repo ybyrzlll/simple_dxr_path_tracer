@@ -111,13 +111,20 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
     rayDesc.TMin = 0;
     rayDesc.TMax = 10000;
     RayPayload rayPayload = { float4(0, 0, 0, 0), currentRayRecursionDepth + 1 };
-    TraceRay(g_scene,
+    /*TraceRay(g_scene,
         RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
         TraceRayParameters::InstanceMask,
         TraceRayParameters::HitGroup::Offset[RayType::Radiance],
         TraceRayParameters::HitGroup::GeometryStride,
         TraceRayParameters::MissShader::Offset[RayType::Radiance],
-        rayDesc, rayPayload);
+        rayDesc, rayPayload);*/
+	TraceRay(g_scene,
+		RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
+		~0,
+		0,
+		2,//TraceRayParameters::HitGroup::GeometryStride,
+		0,
+		rayDesc, rayPayload);
 
     return rayPayload.color;
 }

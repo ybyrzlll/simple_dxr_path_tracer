@@ -345,8 +345,12 @@ void D3D12RaytracingSimpleLighting::CreateRaytracingPipelineStateObject()
     // Shader config
     // Defines the maximum sizes in bytes for the ray payload and attribute structure.
     auto shaderConfig = raytracingPipeline.CreateSubobject<CD3D12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
-    UINT payloadSize = sizeof(XMFLOAT4);    // float4 pixelColor
-    UINT attributeSize = sizeof(XMFLOAT2);  // float2 barycentrics
+	/*RayPayload test;
+	XMFLOAT4 a;
+	UINT t1 = sizeof(test.color), t2 = sizeof(test.recursionDepth), t3 = sizeof(a);*/
+    UINT payloadSize = max(sizeof(RayPayload), sizeof(ShadowRayPayload));  
+	// The maximum number of scalars (counted as 4 bytes each) that can be used for attributes in pipelines that contain this shader. The value cannot exceed D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES.
+    UINT attributeSize = 2 * 4; 
     shaderConfig->Config(payloadSize, attributeSize);
 
     // Local root signature and shader association
@@ -363,7 +367,7 @@ void D3D12RaytracingSimpleLighting::CreateRaytracingPipelineStateObject()
     auto pipelineConfig = raytracingPipeline.CreateSubobject<CD3D12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
     // PERFOMANCE TIP: Set max recursion depth as low as needed 
     // as drivers may apply optimization strategies for low recursion depths.
-    UINT maxRecursionDepth = 1; // ~ primary rays only. 
+	UINT maxRecursionDepth = 1;// MAX_RAY_RECURSION_DEPTH; // ~ primary rays only. 
     pipelineConfig->Config(maxRecursionDepth);
 
 #if _DEBUG
@@ -409,10 +413,10 @@ void D3D12RaytracingSimpleLighting::CreateDescriptorHeap()
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     // Allocate a heap for 5 descriptors:
-    // 4 - vertex and index buffer SRVs
+    // 6 - vertex and index buffer SRVs
     // 1 - raytracing output texture SRV
-    // 3 - bottom and top level acceleration structure fallback wrapped pointer UAVs
-    descriptorHeapDesc.NumDescriptors = 8; //!!!!!!!
+    // 4 - bottom and top level acceleration structure fallback wrapped pointer UAVs
+    descriptorHeapDesc.NumDescriptors = 11; //!!!!!!!
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     descriptorHeapDesc.NodeMask = 0;
@@ -425,31 +429,27 @@ void D3D12RaytracingSimpleLighting::CreateDescriptorHeap()
 // Build geometry used in the sample.
 void D3D12RaytracingSimpleLighting::BuildGeometry()
 {
-	m_indexBuffer.resize(2);
-	m_vertexBuffer.resize(2);
+	m_indexBuffer.resize(ModelCount);
+	m_vertexBuffer.resize(ModelCount);
 
 	//创建作为AC的顶点数据buffer
 	BuildPlane();
 	BuildSphere();
+	BuildCube();
 
 	//创建作为shader使用的顶点数据buffer
 
 	auto device = m_deviceResources->GetD3DDevice();
 
-	UINT num_model = m_indexBuffer.size();
-	for (size_t i = 0; i < num_model; i++) {
-
-	}
-
 	meshes_buffer = new rtrt::Buffer();
 	all_vertices_buffer = new rtrt::Buffer();
 	all_indices_buffer = new rtrt::Buffer();
 
-	meshes.resize(num_model);
+	meshes.resize(ModelCount);
 	std::vector<Vertex> all_vertices;
 	std::vector<Index> all_indices;
 
-	for (int i = 0; i < num_model; i++)
+	for (int i = 0; i < ModelCount; i++)
 	{
 		meshes[i].first_idx_vertices = static_cast<UINT>(all_vertices.size());
 		meshes[i].first_idx_indices = static_cast<UINT>(all_indices.size());
@@ -480,7 +480,7 @@ void D3D12RaytracingSimpleLighting::BuildPlane()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\cube.txt", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\plane.txt", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices ;
@@ -538,6 +538,45 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	// Vertex buffer descriptor must follow index buffer descriptor in the descriptor heap.
 	UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer[0], (nIndexCnt * sizeof(Index)) / 4, 0);
 	UINT descriptorIndexVB = CreateBufferSRV(&m_vertexBuffer[0], nVertexCnt, sizeof(vertices[0]));
+	ThrowIfFalse(descriptorIndexVB == descriptorIndexIB + 1, L"Vertex Buffer descriptor index must follow that of Index Buffer descriptor index!");
+}
+
+void D3D12RaytracingSimpleLighting::BuildCube()
+{
+	auto device = m_deviceResources->GetD3DDevice();
+
+	TCHAR pszAppPath[MAX_PATH] = {};
+	// 得到当前的工作目录，方便我们使用相对路径来访问各种资源文件
+	{
+		UINT nBytes = GetCurrentDirectory(MAX_PATH, pszAppPath);
+		if (MAX_PATH == nBytes)
+		{
+			ThrowIfFalse(HRESULT_FROM_WIN32(GetLastError()));
+		}
+	}
+	USES_CONVERSION;
+	CHAR pszMeshFileName[MAX_PATH] = {};
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\cube.txt", T2A(pszAppPath));
+
+	UINT	nVertexCnt, nIndexCnt = 0;
+	vector<Vertex> vertices;
+	vector<Index> indices;
+
+	LoadMeshVertex(pszMeshFileName, nVertexCnt, vertices, indices);
+
+	m_indexBuffer[2].count = m_vertexBuffer[2].count = nIndexCnt = nVertexCnt;
+
+	model.vertices.push_back(vertices);
+	model.indices.push_back(indices);
+
+
+	AllocateUploadBuffer(device, indices.data(), nIndexCnt * sizeof(Index), &m_indexBuffer[2].resource);
+	AllocateUploadBuffer(device, vertices.data(), nVertexCnt * sizeof(Vertex), &m_vertexBuffer[2].resource);
+
+	// Vertex buffer is passed to the shader along with index buffer as a descriptor table.
+	// Vertex buffer descriptor must follow index buffer descriptor in the descriptor heap.
+	UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer[2], (nIndexCnt * sizeof(Index)) / 4, 0);
+	UINT descriptorIndexVB = CreateBufferSRV(&m_vertexBuffer[2], nVertexCnt, sizeof(vertices[0]));
 	ThrowIfFalse(descriptorIndexVB == descriptorIndexIB + 1, L"Vertex Buffer descriptor index must follow that of Index Buffer descriptor index!");
 }
 
@@ -624,10 +663,11 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 
 
 	//Instance Buffer
+	UINT NumInstance = 4;
 	ComPtr<ID3D12Resource> instanceDescs;
 	{
 		vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instanceDesc;
-		instanceDesc.resize(3);
+		instanceDesc.resize(NumInstance);
 
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
@@ -636,14 +676,21 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 1;
 		instanceDesc[1].InstanceMask = 1;
 
-		instanceDesc[2].Transform[0][3] = -3;
+		//plane
+		instanceDesc[2].Transform[1][3] = -3;
 		instanceDesc[2].Transform[0][0] = instanceDesc[2].Transform[1][1] = instanceDesc[2].Transform[2][2] = instanceDesc[2].Transform[3][3] = 1;
 		instanceDesc[2].InstanceMask = 1;
+
+		//cube
+		instanceDesc[3].Transform[0][3] = -3;
+		instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 1;
+		instanceDesc[3].InstanceMask = 1;
 
 		//指定实例对应的BLAS
 		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[0];
 		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[0];
 		instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[1];
+		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[2];
 
 		UINT64 bufferSize = static_cast<UINT64>(instanceDesc.size() * sizeof(instanceDesc[0]));
 		AllocateUploadBuffer(device, instanceDesc.data(), bufferSize, &instanceDescs, L"InstanceDescs");
@@ -658,7 +705,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS &topLevelInputs = topLevelBuildDesc.Inputs;
 	topLevelInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	topLevelInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
-	topLevelInputs.NumDescs = 3;//实例数量
+	topLevelInputs.NumDescs = NumInstance;//实例数量 !!!!!!!
 	topLevelInputs.pGeometryDescs = nullptr;
 	topLevelInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 	topLevelInputs.InstanceDescs = instanceDescs->GetGPUVirtualAddress();

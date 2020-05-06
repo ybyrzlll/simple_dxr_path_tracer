@@ -123,6 +123,14 @@ inline ShadingData GetShadingData(TriangleAttributes attr)
 //****************------ Utility functions -------***************************
 //***************************************************************************
 
+
+// Fresnel reflectance - schlick approximation.
+float3 FresnelReflectanceSchlick(in float3 I, in float3 N, in float3 f0)
+{
+	float cosi = saturate(dot(-I, N));
+	return f0 + (1 - f0)*pow(1 - cosi, 5);
+}
+
 // Retrieve hit world position.
 float3 HitWorldPosition()
 {
@@ -210,11 +218,6 @@ float4 CalculatePhongLighting(in float4 albedo, in float3 normal, in bool isInSh
 //}
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
-struct RayPayload
-{
-    float4 color;
-};
-
 
 
 // Retrieve attribute at a hit position interpolated from vertex attributes using the hit's barycentrics.
@@ -228,7 +231,34 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
 //***************************************************************************
 //*****------ TraceRay wrappers for radiance and shadow rays. -------********
 //***************************************************************************
+// Trace a radiance ray into the scene and returns a shaded color.
+float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
+{
+	//if (currentRayRecursionDepth >= 3)//MAX_RAY_RECURSION_DEPTH
+	//{
+	//	return float4(0, 0, 0, 0);
+	//}
 
+	// Set the ray's extents.
+	RayDesc rayDesc;
+	rayDesc.Origin = ray.origin;
+	rayDesc.Direction = ray.direction;
+	// Set TMin to a zero value to avoid aliasing artifacts along contact areas.
+	// Note: make sure to enable face culling so as to avoid surface face fighting.
+	rayDesc.TMin = 0;
+	rayDesc.TMax = 10000;
+	RayPayload rayPayload = { float4(0, 0, 0, 0), currentRayRecursionDepth + 1 };
+	//TraceRay(Scene,
+	//	RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
+	//	~0, // instance mask
+	//	0, // hitgroup index
+	//	1, // geom multiplier
+	//	0, // miss index
+	//	rayDesc, rayPayload);
+	TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 0, 0, rayDesc, rayPayload);
+
+	return rayPayload.color;
+}
 
 //***************************************************************************
 //********************------ Ray gen shader.. -------************************
@@ -280,7 +310,7 @@ void MyRaygenShader()
     // TMin should be kept small to prevent missing geometry at close contact areas.
     ray.TMin = 0.001;
     ray.TMax = 10000.0;
-    RayPayload payload = { float4(0, 0, 0, 0) };
+    RayPayload payload = { float4(0, 0, 0, 0), 0 };
     TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, ray, payload);
 	//TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 1, 0, ray, payload);//test
 
@@ -292,49 +322,37 @@ void MyRaygenShader()
 [shader("closesthit")]
 void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 {
- //   float3 hitPosition = HitWorldPosition();
-
- //   // Get the base index of the triangle's first 16 bit index.
- //   uint indexSizeInBytes = 2;
- //   uint indicesPerTriangle = 3;
- //   uint triangleIndexStride = indicesPerTriangle * indexSizeInBytes;
- //   uint baseIndex = PrimitiveIndex() * triangleIndexStride;
-
- //   // Load up 3 16 bit indices for the triangle.
- //   const uint3 indices = Load3x16BitIndices(baseIndex);
-
- //   // Retrieve corresponding vertex normals for the triangle vertices.
- //   float3 vertexNormals[3] = { 
- //       Vertices[indices[0]].normal, 
- //       Vertices[indices[1]].normal, 
- //       Vertices[indices[2]].normal 
- //   };
-
- //   // Compute the triangle's normal.
- //   // This is redundant and done for illustration purposes 
- //   // as all the per-vertex normals are the same and match triangle's normal in this sample. 
- //   float3 triangleNormal = HitAttribute(vertexNormals, attr);
-
- //   //float4 diffuseColor = CalculateDiffuseLighting(hitPosition, triangleNormal);
- //   //float4 color = g_sceneCB.lightAmbientColor + diffuseColor;
-
-	////float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, attr.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
-	//
 	ShadingData hit = GetShadingData(attr);
+
+	// Reflected component.
+	float4 reflectedColor = float4(0, 0, 0, 0);
+	//if (l_materialCB.reflectanceCoef > 0.001)
+	{
+		// Trace a reflection ray.
+		//Ray reflectionRay = { HitWorldPosition(), reflect(WorldRayDirection(), hit.normal) };
+		//float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
+
+		//////float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), triangleNormal, l_materialCB.albedo.xyz);
+		//////reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
+		//float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), hit.normal, g_cubeCB.albedo.xyz);
+		//reflectedColor = 0.3 * float4(fresnelR, 1) * reflectionColor;
+	}
+
 	float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, false, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
+	
+	float4 color = phongColor;// +reflectedColor;
+	
+	// Apply visibility falloff.
+	//float t = RayTCurrent();
+	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
-	//float3 hitPosition = HitWorldPosition();
-	//float4 diffuseColor = CalculateDiffuseLighting(hitPosition, hit.normal);
-	//float4 color =  g_sceneCB.lightAmbientColor +diffuseColor ;
-
-    payload.color = phongColor;
+	payload.color = color;
 }
 
 [shader("miss")]
 void MyMissShader(inout RayPayload payload)
 {
-    float4 background = float4(0.0f, 0.2f, 0.4f, 1.0f);
-    payload.color = background;
+    payload.color = BackgroundColor;
 }
 
 #endif // RAYTRACING_HLSL
