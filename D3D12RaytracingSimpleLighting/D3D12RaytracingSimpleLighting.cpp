@@ -111,7 +111,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	// Setup camera.
 	{
 		// Initialize the view and projection inverse matrices.
-		m_eye = { 0.0f, 5.0f, -5.0f, 1.0f };
+		m_eye = { 0.0f, 10.0f, -5.0f, 1.0f };
 		m_at = { 0.0f, 0.0f, 0.0f, 1.0f };
 		XMVECTOR right = { 1.0f, 0.0f, 0.0f, 0.0f };
 
@@ -133,7 +133,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 		XMFLOAT4 lightAmbientColor;
 		XMFLOAT4 lightDiffuseColor;
 
-		lightPosition = XMFLOAT4(0.0f, 1.8f, -2.0f, 0.0f);
+		lightPosition = XMFLOAT4(0.0f, 3.8f, -2.0f, 0.0f);
 		m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
 		lightAmbientColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -367,7 +367,7 @@ void D3D12RaytracingSimpleLighting::CreateRaytracingPipelineStateObject()
 	auto pipelineConfig = raytracingPipeline.CreateSubobject<CD3D12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
 	// PERFOMANCE TIP: Set max recursion depth as low as needed 
 	// as drivers may apply optimization strategies for low recursion depths.
-	UINT maxRecursionDepth = 1;// MAX_RAY_RECURSION_DEPTH; // ~ primary rays only. 
+	UINT maxRecursionDepth = 3;// MAX_RAY_RECURSION_DEPTH; // ~ primary rays only. 
 	pipelineConfig->Config(maxRecursionDepth);
 
 #if _DEBUG
@@ -670,12 +670,12 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc.resize(NumInstance);
 		
 		//plane
-		instanceDesc[0].Transform[1][3] = -3;
+		instanceDesc[0].Transform[1][3] = -1;
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 3;
 		instanceDesc[0].InstanceMask = 1;
 
 		//cube
-		instanceDesc[1].Transform[1][3] = -2.5;
+		//instanceDesc[1].Transform[1][3] = -2.5;
 		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 1;
 		instanceDesc[1].InstanceMask = 1;
 

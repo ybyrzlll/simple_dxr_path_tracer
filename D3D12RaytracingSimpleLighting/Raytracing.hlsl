@@ -234,10 +234,10 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
 // Trace a radiance ray into the scene and returns a shaded color.
 float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
 {
-	//if (currentRayRecursionDepth >= 3)//MAX_RAY_RECURSION_DEPTH
-	//{
-	//	return float4(0, 0, 0, 0);
-	//}
+	if (currentRayRecursionDepth >= 2)//MAX_RAY_RECURSION_DEPTH
+	{
+		return float4(0, 0, 0, 0);
+	}
 
 	// Set the ray's extents.
 	RayDesc rayDesc;
@@ -255,7 +255,7 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
 	//	1, // geom multiplier
 	//	0, // miss index
 	//	rayDesc, rayPayload);
-	TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 0, 0, rayDesc, rayPayload);
+	TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, rayDesc, rayPayload);
 
 	return rayPayload.color;
 }
@@ -328,25 +328,25 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	float4 reflectedColor = float4(0, 0, 0, 0);
 	//if (l_materialCB.reflectanceCoef > 0.001)
 	{
-		// Trace a reflection ray.
-		//Ray reflectionRay = { HitWorldPosition(), reflect(WorldRayDirection(), hit.normal) };
-		//float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
+		//Trace a reflection ray.
+		Ray reflectionRay = { HitWorldPosition(), reflect(WorldRayDirection(), hit.normal) };
+		float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
 
-		//////float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), triangleNormal, l_materialCB.albedo.xyz);
-		//////reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
-		//float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), hit.normal, g_cubeCB.albedo.xyz);
-		//reflectedColor = 0.3 * float4(fresnelR, 1) * reflectionColor;
+		////float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), triangleNormal, l_materialCB.albedo.xyz);
+		////reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
+		float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), hit.normal, g_cubeCB.albedo.xyz);
+		reflectedColor = 0.3 * float4(fresnelR, 1) * reflectionColor;
 	}
 
 	float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, false, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
 	
-	float4 color = phongColor;// +reflectedColor;
+	float4 color = phongColor + reflectedColor;// +reflectedColor;
 	
 	// Apply visibility falloff.
 	//float t = RayTCurrent();
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
-	payload.color = CalculateDiffuseLighting(HitWorldPosition(), hit.normal);//color;
+	payload.color = color ;// CalculateDiffuseLighting(HitWorldPosition(), hit.normal);//color;
 }
 
 [shader("miss")]
