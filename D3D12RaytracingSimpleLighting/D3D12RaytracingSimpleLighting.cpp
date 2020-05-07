@@ -113,10 +113,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 		// Initialize the view and projection inverse matrices.
 		m_eye = { 0.0f, 10.0f, -5.0f, 1.0f };
 		m_at = { 0.0f, 0.0f, 0.0f, 1.0f };
-		XMVECTOR right = { 1.0f, 0.0f, 0.0f, 0.0f };
-
-		XMVECTOR direction = XMVector4Normalize(m_at - m_eye);
-		m_up = XMVector3Normalize(XMVector3Cross(direction, right));
+		m_up = { 0.0f, 1.0f, 0.0f, 1.0f };
 
 		// Rotate camera around Y axis.
 	   /* XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(45.0f));
