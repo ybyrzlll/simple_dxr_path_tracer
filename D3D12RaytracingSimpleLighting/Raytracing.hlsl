@@ -346,7 +346,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	//float t = RayTCurrent();
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
-	payload.color = phongColor;// CalculateDiffuseLighting(HitWorldPosition(), hit.normal);//color;
+	payload.color = CalculateDiffuseLighting(HitWorldPosition(), hit.normal);//color;
 }
 
 [shader("miss")]

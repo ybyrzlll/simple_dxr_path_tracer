@@ -133,7 +133,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 		XMFLOAT4 lightAmbientColor;
 		XMFLOAT4 lightDiffuseColor;
 
-		lightPosition = XMFLOAT4(0.0f, 1.8f, -1.0f, 0.0f);
+		lightPosition = XMFLOAT4(0.0f, 1.8f, -2.0f, 0.0f);
 		m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
 		lightAmbientColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -607,7 +607,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		geometryDesc[i].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 		geometryDesc[i].Triangles.IndexBuffer = m_indexBuffer[i].resource->GetGPUVirtualAddress();
 		geometryDesc[i].Triangles.IndexCount = static_cast<UINT>(m_indexBuffer[i].resource->GetDesc().Width) / sizeof(Index);
-		geometryDesc[i].Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
+		geometryDesc[i].Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;//!!!!!!!!!!!!!
 		geometryDesc[i].Triangles.Transform3x4 = 0;
 		geometryDesc[i].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 		geometryDesc[i].Triangles.VertexCount = static_cast<UINT>(m_vertexBuffer[i].resource->GetDesc().Width) / sizeof(Vertex);
@@ -670,12 +670,12 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc.resize(NumInstance);
 		
 		//plane
-		instanceDesc[0].Transform[1][3] = -2.5;
+		instanceDesc[0].Transform[1][3] = -3;
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 3;
 		instanceDesc[0].InstanceMask = 1;
 
 		//cube
-		instanceDesc[1].Transform[1][3] = -1;
+		instanceDesc[1].Transform[1][3] = -2.5;
 		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 1;
 		instanceDesc[1].InstanceMask = 1;
 
@@ -1299,7 +1299,7 @@ void D3D12RaytracingSimpleLighting::LoadMeshVertex(const CHAR * pszMeshFileName,
 	std::string line, key, x, y, z;
 	vector<XMFLOAT3> pos, normal, texture;
 	char delimeter = '/';
-	UINT index = 0;
+	uint32_t index = 0;
 
 	ppVertex.resize(0);
 	ppIndices.resize(0);

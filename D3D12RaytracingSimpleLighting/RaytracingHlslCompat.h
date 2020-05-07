@@ -38,8 +38,8 @@ typedef uint32_t Index;
 // Ray types traced in this sample.
 namespace ModelType {
 	enum Enum {
-		Plane ,  
-		Cube,        
+		Cube,
+		Plane,
 		Sphere
 	};
 }
