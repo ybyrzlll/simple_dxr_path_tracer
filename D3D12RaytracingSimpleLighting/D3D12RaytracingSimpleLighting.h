@@ -134,12 +134,14 @@ private:
     UINT m_raytracingOutputResourceUAVDescriptorHeapIndex;
 
     // Shader tables
-    static const wchar_t* c_hitGroupName;
+    static const wchar_t* c_hitGroupNames_TriangleGeometry[RayType::Count];;
     static const wchar_t* c_raygenShaderName;
     static const wchar_t* c_closestHitShaderName;
-    static const wchar_t* c_missShaderName;
+    static const wchar_t* c_missShaderNames[RayType::Count];
     ComPtr<ID3D12Resource> m_missShaderTable;
+	UINT m_missShaderTableStrideInBytes;
     ComPtr<ID3D12Resource> m_hitGroupShaderTable;
+	UINT m_hitGroupShaderTableStrideInBytes;
     ComPtr<ID3D12Resource> m_rayGenShaderTable;
     
     // Application state

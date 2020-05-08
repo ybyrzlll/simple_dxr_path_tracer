@@ -26,6 +26,9 @@ using namespace DirectX;
 #define CPP_REGISTER_INDICES 3
 #define HLSL_REGISTER_INDICES t3
 
+
+#endif
+
 // PERFORMANCE TIP: Set max recursion depth as low as needed
 // as drivers may apply optimization strategies for low recursion depths.
 #define MAX_RAY_RECURSION_DEPTH 3    // ~ primary rays + reflections + shadow rays from reflected geometry.
@@ -33,7 +36,6 @@ using namespace DirectX;
 
 // Shader will use byte encoding to access indices.
 typedef uint32_t Index;
-#endif
 
 // Ray types traced in this sample.
 namespace ModelType {

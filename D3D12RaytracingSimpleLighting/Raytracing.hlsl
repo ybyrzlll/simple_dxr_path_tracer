@@ -234,7 +234,7 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
 // Trace a radiance ray into the scene and returns a shaded color.
 float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
 {
-	if (currentRayRecursionDepth >= 2)//MAX_RAY_RECURSION_DEPTH
+	if (currentRayRecursionDepth >= MAX_RAY_RECURSION_DEPTH)//MAX_RAY_RECURSION_DEPTH
 	{
 		return float4(0, 0, 0, 0);
 	}
@@ -258,6 +258,41 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
 	TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, rayDesc, rayPayload);
 
 	return rayPayload.color;
+}
+
+// Trace a shadow ray and return true if it hits any geometry.
+bool TraceShadowRayAndReportIfHit(in Ray ray, in UINT currentRayRecursionDepth)
+{
+	if (currentRayRecursionDepth >= MAX_RAY_RECURSION_DEPTH)
+	{
+		return false;
+	}
+
+	// Set the ray's extents.
+	RayDesc rayDesc;
+	rayDesc.Origin = ray.origin;
+	rayDesc.Direction = ray.direction;
+	// Set TMin to a zero value to avoid aliasing artifcats along contact areas.
+	// Note: make sure to enable back-face culling so as to avoid surface face fighting.
+	rayDesc.TMin = 0;
+	rayDesc.TMax = 10000;
+
+	// Initialize shadow ray payload.
+	// Set the initial value to true since closest and any hit shaders are skipped. 
+	// Shadow miss shader, if called, will set it to false.
+	ShadowRayPayload shadowPayload = { true };
+	TraceRay(Scene,
+		RAY_FLAG_CULL_BACK_FACING_TRIANGLES
+		| RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH
+		| RAY_FLAG_FORCE_OPAQUE             // ~skip any hit shaders
+		| RAY_FLAG_SKIP_CLOSEST_HIT_SHADER, // ~skip closest hit shaders,
+		TraceRayParameters::InstanceMask,
+		TraceRayParameters::HitGroup::Offset[RayType::Shadow],
+		TraceRayParameters::HitGroup::GeometryStride,
+		TraceRayParameters::MissShader::Offset[RayType::Shadow],
+		rayDesc, shadowPayload);
+
+	return shadowPayload.hit;
 }
 
 //***************************************************************************
@@ -311,7 +346,7 @@ void MyRaygenShader()
     ray.TMin = 0.001;
     ray.TMax = 10000.0;
     RayPayload payload = { float4(0, 0, 0, 0), 0 };
-    TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, ray, payload);
+    TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 2, 0, ray, payload);
 	//TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 1, 0, ray, payload);//test
 
 
@@ -324,35 +359,45 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 {
 	ShadingData hit = GetShadingData(attr);
 
+	float3 hitPosition = HitWorldPosition();
+	Ray shadowRay = { hitPosition, normalize(g_sceneCB.lightPosition.xyz - hitPosition) };
+	bool shadowRayHit = TraceShadowRayAndReportIfHit(shadowRay, payload.recursionDepth);
+
 	// Reflected component.
 	float4 reflectedColor = float4(0, 0, 0, 0);
 	//if (l_materialCB.reflectanceCoef > 0.001)
 	{
 		//Trace a reflection ray.
-		Ray reflectionRay = { HitWorldPosition(), reflect(WorldRayDirection(), hit.normal) };
+		Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
 		float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
 
-		////float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), triangleNormal, l_materialCB.albedo.xyz);
-		////reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
+		//float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), triangleNormal, l_materialCB.albedo.xyz);
+		//reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
 		float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), hit.normal, g_cubeCB.albedo.xyz);
 		reflectedColor = 0.3 * float4(fresnelR, 1) * reflectionColor;
 	}
 
-	float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, false, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
+	float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
 	
-	float4 color = phongColor + reflectedColor;// +reflectedColor;
+	float4 color = phongColor +reflectedColor;// +reflectedColor;
 	
 	// Apply visibility falloff.
 	//float t = RayTCurrent();
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
-	payload.color = color ;// CalculateDiffuseLighting(HitWorldPosition(), hit.normal);//color;
+	payload.color = color;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
 
 [shader("miss")]
 void MyMissShader(inout RayPayload payload)
 {
     payload.color = BackgroundColor;
+}
+
+[shader("miss")]
+void MyMissShader_ShadowRay(inout ShadowRayPayload rayPayload)
+{
+	rayPayload.hit = false;
 }
 
 #endif // RAYTRACING_HLSL
