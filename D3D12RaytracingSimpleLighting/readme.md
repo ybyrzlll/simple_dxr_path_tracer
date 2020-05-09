@@ -11,7 +11,7 @@ Each frame render happens in the sample's OnRender() call and includes executing
 
 ##### Shader accessed resources
 The shaders access all the input data from constant buffers and buffer resources. There are two constant buffers: 
-* CubeConstantBuffer contains cube's color - passed in via a shader record for the shader.
+* MaterialConstantBuffer contains cube's color - passed in via a shader record for the shader.
 * SceneConstantBuffer stores scene wide camera and light parameters - made available via a global root signature.
 
 Triangle normals are accessed from index and vertex buffers that are explicitly passed in as buffer resources to the closest hit shader. First, three hit triangle's vertex indices are loaded from a 16bit index buffer. Then, the indices are used to index into the vertex buffer and load a triangle normal that is duplicatively stored for each triangle's vertex.

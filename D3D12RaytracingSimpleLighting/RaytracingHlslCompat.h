@@ -67,9 +67,13 @@ struct SceneConstantBuffer
     XMVECTOR lightDiffuseColor;
 };
 
-struct CubeConstantBuffer
+struct MaterialConstantBuffer
 {
-    XMFLOAT4 albedo;
+	XMFLOAT4 albedo;
+	float roughtness;
+	float metallic;
+	float specular;
+
 	float reflectanceCoef;
 	float diffuseCoef;
 	float specularCoef;

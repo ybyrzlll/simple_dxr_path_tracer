@@ -113,8 +113,16 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 
 	// Setup materials.
 	{
-		//m_cubeCB.albedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_cubeCB = { XMFLOAT4(0.9f, 0.9f, 0.9f, 1.0f), 0.25f, 1, 0.4f, 50, 1 };
+		//m_materialCB.albedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		m_materialCB = { XMFLOAT4(0.9f, 0.9f, 0.9f, 1.0f),
+			0.5f,
+			0.5f,
+			0.5f, 
+			0.25f,
+			1, 
+			0.4f,
+			50,
+			1 };
 	}
 
 	// Setup camera.
@@ -261,7 +269,7 @@ void D3D12RaytracingSimpleLighting::CreateRootSignatures()
 	// This is a root signature that enables a shader to have unique arguments that come from shader tables.
 	{
 		CD3DX12_ROOT_PARAMETER rootParameters[LocalRootSignatureParams::Count];
-		rootParameters[LocalRootSignatureParams::CubeConstantSlot].InitAsConstants(SizeOfInUint32(m_cubeCB), 1);
+		rootParameters[LocalRootSignatureParams::CubeConstantSlot].InitAsConstants(SizeOfInUint32(m_materialCB), 1);
 		CD3DX12_ROOT_SIGNATURE_DESC localRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
 		localRootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
 		SerializeAndCreateRaytracingRootSignature(localRootSignatureDesc, &m_raytracingLocalRootSignature);
@@ -851,9 +859,9 @@ void D3D12RaytracingSimpleLighting::BuildShaderTables()
 	// Hit group shader table
 	{
 		struct RootArguments {
-			CubeConstantBuffer cb;
+			MaterialConstantBuffer cb;
 		} rootArguments;
-		rootArguments.cb = m_cubeCB;
+		rootArguments.cb = m_materialCB;
 
 		UINT numShaderRecords = 2;
 		UINT shaderRecordSize = shaderIdentifierSize + sizeof(rootArguments);
@@ -984,7 +992,7 @@ void D3D12RaytracingSimpleLighting::OnUpdate()
 		float angleToRotateBy = -360.0f * (elapsedTime / secondsToRotateAround);
 		XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(angleToRotateBy));
 		const XMVECTOR& prevLightPosition = m_sceneCB[prevFrameIndex].lightPosition;
-		m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
+		//m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
 	}
 }
 

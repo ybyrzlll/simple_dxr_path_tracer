@@ -102,7 +102,7 @@ private:
     
     // Raytracing scene
     SceneConstantBuffer m_sceneCB[FrameCount];
-    CubeConstantBuffer m_cubeCB;
+    MaterialConstantBuffer m_materialCB;
 
     // Geometry
     struct D3DBuffer
