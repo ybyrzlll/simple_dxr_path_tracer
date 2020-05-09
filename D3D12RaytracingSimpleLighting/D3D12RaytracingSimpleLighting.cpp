@@ -992,7 +992,7 @@ void D3D12RaytracingSimpleLighting::OnUpdate()
 		float angleToRotateBy = -360.0f * (elapsedTime / secondsToRotateAround);
 		XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(angleToRotateBy));
 		const XMVECTOR& prevLightPosition = m_sceneCB[prevFrameIndex].lightPosition;
-		//m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
+		m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
 	}
 }
 

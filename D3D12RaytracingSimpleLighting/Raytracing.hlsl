@@ -123,11 +123,19 @@ inline ShadingData GetShadingData(TriangleAttributes attr)
 //****************------ Utility functions -------***************************
 //***************************************************************************
 
+float3 DisneyDiffuse(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness)
+{
+	float3 H = (l- v)/length(l - v);
+	float Fd90 = 0.5;// +2 * roughness * pow(saturate(dot(-I, H)), 2);
+	return (albedo / 3.14159) *
+		(1 + (Fd90 - 1) * pow((1 - saturate(dot(l, n))), 5)) *
+		(1 + (Fd90 - 1) * pow((1 - saturate(dot(-v, n))), 5));
+}
 
 // Fresnel reflectance - schlick approximation.
-float3 FresnelReflectanceSchlick(in float3 I, in float3 N, in float3 f0)
+float3 FresnelReflectanceSchlick(in float3 v, in float3 n, in float3 f0)
 {
-	float cosi = saturate(dot(-I, N));
+	float cosi = saturate(dot(-v, n));
 	return f0 + (1 - f0)*pow(1 - cosi, 5);
 }
 
@@ -360,7 +368,8 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	ShadingData hit = GetShadingData(attr);
 
 	float3 hitPosition = HitWorldPosition();
-	Ray shadowRay = { hitPosition, normalize(g_sceneCB.lightPosition.xyz - hitPosition) };
+	float3 Hit2Light = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
+	Ray shadowRay = { hitPosition,  Hit2Light };
 	bool shadowRayHit = TraceShadowRayAndReportIfHit(shadowRay, payload.recursionDepth);
 
 	// Reflected component.
@@ -368,24 +377,26 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	//if (l_materialCB.reflectanceCoef > 0.001)
 	{
 		//Trace a reflection ray.
-		Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
-		float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
+		//Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
+		//float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
 
-		//float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), triangleNormal, l_materialCB.albedo.xyz);
-		//reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
-		float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), hit.normal, g_cubeCB.albedo.xyz);
-		reflectedColor = 0.3 * float4(fresnelR, 1) * reflectionColor;
+		////float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), triangleNormal, l_materialCB.albedo.xyz);
+		////reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
+		//float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), hit.normal, g_cubeCB.albedo.xyz);
+		//reflectedColor = 0.3 * float4(fresnelR, 1) * reflectionColor;
 	}
 
 	float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
 	
 	float4 color = phongColor +reflectedColor;// +reflectedColor;
+
+	float4 disneyDiColor = float4(DisneyDiffuse(Hit2Light, WorldRayDirection(), hit.normal, g_cubeCB.albedo, g_cubeCB.roughness), 1);
 	
 	// Apply visibility falloff.
 	//float t = RayTCurrent();
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
-	payload.color = color;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
+	payload.color = disneyDiColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
 
 [shader("miss")]

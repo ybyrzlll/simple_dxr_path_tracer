@@ -70,7 +70,7 @@ struct SceneConstantBuffer
 struct MaterialConstantBuffer
 {
 	XMFLOAT4 albedo;
-	float roughtness;
+	float roughness;
 	float metallic;
 	float specular;
 
