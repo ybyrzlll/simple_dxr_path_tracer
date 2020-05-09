@@ -114,8 +114,8 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	// Setup materials.
 	{
 		//m_materialCB.albedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_materialCB = { XMFLOAT4(0.9f, 0.9f, 0.9f, 1.0f),
-			0.5f,
+		m_materialCB = { XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f),//albedo
+			0.7f,//roughness
 			0.5f,
 			0.5f, 
 			0.25f,
@@ -128,7 +128,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	// Setup camera.
 	{
 		// Initialize the view and projection inverse matrices.
-		m_eye = { 0.0f, 10.0f, -5.0f, 1.0f };
+		m_eye = { 5.0f, 10.0f, -5.0f, 1.0f };
 		m_at = { 0.0f, 0.0f, 0.0f, 1.0f };
 		m_up = { 0.0f, 1.0f, 0.0f, 1.0f };
 
@@ -992,7 +992,7 @@ void D3D12RaytracingSimpleLighting::OnUpdate()
 		float angleToRotateBy = -360.0f * (elapsedTime / secondsToRotateAround);
 		XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(angleToRotateBy));
 		const XMVECTOR& prevLightPosition = m_sceneCB[prevFrameIndex].lightPosition;
-		m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
+		//m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
 	}
 }
 
