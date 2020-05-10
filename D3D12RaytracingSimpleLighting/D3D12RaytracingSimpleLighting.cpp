@@ -115,7 +115,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	{
 		//m_materialCB.albedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		m_materialCB = { XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f),//albedo
-			0.7f,//roughness
+			0.4f,//roughness
 			0.5f,
 			0.5f, 
 			0.25f,
@@ -697,7 +697,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[0].InstanceMask = 1;
 
 		//cube
-		//instanceDesc[1].Transform[1][3] = -2.5;
+		instanceDesc[1].Transform[1][3] = 0;
 		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 1;
 		instanceDesc[1].InstanceMask = 1;
 
@@ -992,7 +992,7 @@ void D3D12RaytracingSimpleLighting::OnUpdate()
 		float angleToRotateBy = -360.0f * (elapsedTime / secondsToRotateAround);
 		XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(angleToRotateBy));
 		const XMVECTOR& prevLightPosition = m_sceneCB[prevFrameIndex].lightPosition;
-		//m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
+		m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
 	}
 }
 
@@ -1328,7 +1328,6 @@ void D3D12RaytracingSimpleLighting::LoadMeshVertex(const CHAR * pszMeshFileName,
 	//}
 
 	std::ifstream file;
-	char input;
 	file.open(pszMeshFileName);
 	std::string line, key, x, y, z;
 	vector<XMFLOAT3> pos, normal, texture;

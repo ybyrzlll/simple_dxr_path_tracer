@@ -122,63 +122,6 @@ inline ShadingData GetShadingData(TriangleAttributes attr)
 //***************************************************************************
 //****************------ Utility functions -------***************************
 //***************************************************************************
-
-float G2(in float3 l, in float3 v, in float3 n) {
-	float3 h = (l - v) / length(l - v);
-	float res = min(2 * saturate(dot(n, h))*saturate(dot(-v, n)) / saturate(dot(-v, h)), 
-		2 * saturate(dot(n, h))*saturate(dot(l, n)) / saturate(dot(-v, h)));
-	return min(res, 1);
-}
-
-
-
-
-float G1(in float3 v, in float3 n, in float roughness) {
-	float k = pow(roughness+1 , 2) / 8;
-	return saturate(dot(v, n)) / (saturate(dot(v, n))*(1 - k) + k);
-}
-
-float Gue4(in float3 l, in float3 v, in float3 n, in float roughness) {
-	return G1(l, n, roughness) * G1(-v, n, roughness);
-}
-
-float3 Dgtr(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
-	float3 h = (l - v) / length(l - v);
-	float CosThetaH = saturate(dot(n, h)) / (length(n)*length(h));
-	float CosThetaH_Pow2 = pow(CosThetaH, 2);
-	return albedo / pow((pow(roughness, 2) * CosThetaH_Pow2 + 1- CosThetaH_Pow2), 2);
-}
-
-
-float3 DisneyDiffuse(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness)
-{
-	if (dot(l, n) < 0 || dot(-v, n) < 0) return float3(0, 0, 0);
-	float3 h = (l- v)/length(l - v);
-	float CosThetaL = saturate(dot(l, n)) / (length(l)*length(n));
-	float CosThetaV = saturate(dot(-v, n)) / (length(v)*length(n));
-	float CosThetaD = saturate(dot(l, h)) / (length(l)*length(h));
-
-	float Fd90 = 0.5 + 2 * roughness * pow(CosThetaD, 2);
-	return (albedo / 3.14159) *
-		(1 + (Fd90 - 1) * pow(1 - CosThetaL, 5)) *
-		(1 + (Fd90 - 1) * pow(1 - CosThetaV, 5));
-}
-
-// Fresnel reflectance - schlick approximation.
-float3 FresnelReflectanceSchlick(in float3 v, in float3 n, in float3 f0)
-{
-	float cosi = saturate(dot(-v, n));
-	return f0 + (1 - f0)*pow(1 - cosi, 5);
-}
-
-//Cook-Torrance BRDF
-float3 Cook_Torrance(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
-	float3 temp = FresnelReflectanceSchlick(v, n, albedo)* G2(l, v, n) * Dgtr(l, v, n, albedo, roughness);
-		//Gue4(l, v, n, roughness);// *Dgtr(l, v, n, albedo, roughness);
-	return temp / (3.14 * saturate(dot(n, l)) * saturate(dot(n, -v)));
-}
-
-
 // Retrieve hit world position.
 float3 HitWorldPosition()
 {
@@ -275,6 +218,62 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
         attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
         attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
+//***************************************************************************
+//****************------ Shading functions -------***************************
+//***************************************************************************
+
+float G2(in float3 l, in float3 v, in float3 n) {
+	float3 h = (l - v) / length(l - v);
+	float res = min(2 * saturate(dot(n, h))*saturate(dot(-v, n)) / saturate(dot(-v, h)),
+		2 * saturate(dot(n, h))*saturate(dot(l, n)) / saturate(dot(-v, h)));
+	return min(res, 1);
+}
+
+float G1(in float3 v, in float3 n, in float roughness) {
+	float k = pow(roughness + 1, 2) / 8;
+	return saturate(dot(v, n)) / (saturate(dot(v, n))*(1 - k) + k);
+}
+
+float Gue4(in float3 l, in float3 v, in float3 n, in float roughness) {
+	return G1(l, n, roughness) * G1(-v, n, roughness);
+}
+
+float3 Dgtr(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
+	float3 h = (l - v) / length(l - v);
+	float CosThetaH = saturate(dot(n, h)) / (length(n)*length(h));
+	float CosThetaH_Pow2 = pow(CosThetaH, 2);
+	return albedo / pow((pow(roughness, 2) * CosThetaH_Pow2 + 1 - CosThetaH_Pow2), 2);
+}
+
+
+float3 DisneyDiffuse(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness)
+{
+	if (dot(l, n) < 0 || dot(-v, n) < 0) return float3(0, 0, 0);
+	float3 h = (l - v) / length(l - v);
+	float CosThetaL = saturate(dot(l, n)) / (length(l)*length(n));
+	float CosThetaV = saturate(dot(-v, n)) / (length(v)*length(n));
+	float CosThetaD = saturate(dot(l, h)) / (length(l)*length(h));
+
+	float Fd90 = 0.5 + 2 * roughness * pow(CosThetaD, 2);
+	return (albedo / 3.14159) *
+		(1 + (Fd90 - 1) * pow(1 - CosThetaL, 5)) *
+		(1 + (Fd90 - 1) * pow(1 - CosThetaV, 5));
+}
+
+// Fresnel reflectance - schlick approximation.
+float3 FresnelReflectanceSchlick(in float3 v, in float3 n, in float3 f0)
+{
+	float cosi = saturate(dot(-v, n));
+	return f0 + (1 - f0)*pow(1 - cosi, 5);
+}
+
+//Cook-Torrance BRDF
+float3 Cook_Torrance(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
+	float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * Dgtr(l, v, n, albedo, roughness);
+	//; G2(l, v, n)// *Dgtr(l, v, n, albedo, roughness);
+	return temp / (3.14 * saturate(dot(n, l)) * saturate(dot(n, -v)));
+}
+
 
 //***************************************************************************
 //*****------ TraceRay wrappers for radiance and shadow rays. -------********
@@ -386,20 +385,15 @@ void MyRaygenShader()
 
     // Trace the ray.
     // Set the ray's extents.
-    RayDesc ray;
-    ray.Origin = origin;
-    ray.Direction = rayDir;
-    // Set TMin to a non-zero small value to avoid aliasing issues due to floating - point errors.
-    // TMin should be kept small to prevent missing geometry at close contact areas.
-    ray.TMin = 0.001;
-    ray.TMax = 10000.0;
-    RayPayload payload = { float4(0, 0, 0, 0), 0 };
-    TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 2, 0, ray, payload);
+    Ray ray;
+    ray.origin = origin;
+    ray.direction = rayDir;
+	float4 color = TraceRadianceRay(ray, 0);
 	//TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 1, 0, ray, payload);//test
 
 
     // Write the raytraced color to the output texture.
-    RenderTarget[DispatchRaysIndex().xy] = payload.color;
+    RenderTarget[DispatchRaysIndex().xy] = color;
 }
 
 [shader("closesthit")]
@@ -421,10 +415,6 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 		//Trace a reflection ray.
 		Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
 		float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
-
-		//float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), triangleNormal, l_materialCB.albedo.xyz);
-		//reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
-		
 		reflectedColor = 0.3 * fresnelR * reflectionColor;
 	}
 
@@ -432,17 +422,17 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	
 	float4 color = phongColor + reflectedColor;// +reflectedColor;
 
-	float4 disneyDiColor = float4(DisneyDiffuse(Hit2Light, normalize(WorldRayDirection()), hit.normal, g_cubeCB.albedo, g_cubeCB.roughness), 1);
+	float4 disneyDiColor = float4(DisneyDiffuse(Hit2Light, normalize(WorldRayDirection()), hit.normal, g_cubeCB.albedo.xyz, g_cubeCB.roughness), 1);
 	
 	float4 CookTorranceColor = float4(0, 0, 0, 0);
-	//if(!shadowRayHit)
-	CookTorranceColor = float4(Cook_Torrance(Hit2Light, normalize(WorldRayDirection()), hit.normal, g_cubeCB.albedo, g_cubeCB.roughness), 1);
+	if(!shadowRayHit)
+	CookTorranceColor = float4(Cook_Torrance(Hit2Light, normalize(WorldRayDirection()), hit.normal, g_cubeCB.albedo.xyz, g_cubeCB.roughness), 1);
 	// Apply visibility falloff.
 	//float t = RayTCurrent();
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
-	//(1- fresnelR)* disneyDiColor + fresnelR *
-	payload.color =  CookTorranceColor ;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
+	//(1- fresnelR)* disneyDiColor + fresnelR * CookTorranceColor + reflectedColor
+	payload.color = (1 - fresnelR)* disneyDiColor + fresnelR * CookTorranceColor + reflectedColor;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
 
 [shader("miss")]

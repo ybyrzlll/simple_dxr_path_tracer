@@ -33,6 +33,7 @@ using namespace DirectX;
 // as drivers may apply optimization strategies for low recursion depths.
 #define MAX_RAY_RECURSION_DEPTH 3    // ~ primary rays + reflections + shadow rays from reflected geometry.
 
+#define Sample_Num 4
 
 // Shader will use byte encoding to access indices.
 typedef uint32_t Index;
