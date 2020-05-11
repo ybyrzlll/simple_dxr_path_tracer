@@ -144,14 +144,14 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	{
 		// Initialize the lighting parameters.
 		XMFLOAT4 lightPosition;
-		XMFLOAT4 lightColor;
+		XMFLOAT4 lightSpecColor;
 		XMFLOAT4 lightDiffuseColor;
 
 		lightPosition = XMFLOAT4(-2.0f, 5.8f, -2.0f, 0.0f);
 		m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
-		lightColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-		m_sceneCB[frameIndex].lightColor = XMLoadFloat4(&lightColor);
+		lightSpecColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+		m_sceneCB[frameIndex].lightColor = XMLoadFloat4(&lightSpecColor);
 
 		lightDiffuseColor = XMFLOAT4(0.5f, 0.0f, 0.0f, 1.0f);
 		m_sceneCB[frameIndex].lightDiffuseColor = XMLoadFloat4(&lightDiffuseColor);
@@ -698,10 +698,16 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
 
-		//cube
-		/*instanceDesc[1].Transform[1][3] = 0;
-		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 1;
-		instanceDesc[1].InstanceMask = 1;*/
+
+		////plane
+		//instanceDesc[0].Transform[1][3] = -3;
+		//instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 3;
+		//instanceDesc[0].InstanceMask = 1;
+
+		////cube
+		//instanceDesc[1].Transform[1][3] = -1;
+		//instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 1;
+		//instanceDesc[1].InstanceMask = 1;
 
 		//sphere
 		//instanceDesc[2].Transform[0][3] = -3;
@@ -713,8 +719,11 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		//instanceDesc[3].InstanceMask = 1;
 
 		//指定实例对应的BLAS
+		/*instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
+		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];*/
+
 		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
-		//instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
+
 		/*instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];*/
 

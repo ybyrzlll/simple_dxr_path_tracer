@@ -186,14 +186,14 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
         attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
         attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
+
+
 //***************************************************************************
-//****************------ Shading functions -------***************************
+//****************------ Old Shading functions -------***************************
 //***************************************************************************
 
-float G2(in float3 l, in float3 v, in float3 n) {
-	float3 h = normalize(l + v);
-	float res = min(2 * saturate(dot(n, h))*saturate(dot(-v, n)) / saturate(dot(-v, h)),
-		2 * saturate(dot(n, h))*saturate(dot(l, n)) / saturate(dot(-v, h)));
+float G2(in float NoV, in float NoH, in float NoL) {
+	float res = min(2 * NoH * NoV / NoH, 2 * NoH * NoL / NoH);
 	return min(res, 1);
 }
 
@@ -206,15 +206,6 @@ float Gue4(in float3 l, in float3 v, in float3 n, in float roughness) {
 	return G1(l, n, roughness) * G1(-v, n, roughness);
 }
 
-float3 DGGX(in float3 l, in float3 v, in float3 n, in float3 albedo, in float Roughness) {
-	v = -v;
-	float3 h = normalize(l + v);
-	float NoH = (saturate(dot(h, n))); 
-	float a = Roughness * Roughness;
-	float a2 = a * a;
-	float d = (NoH * a2 - NoH) * NoH + 1;	// 2 mad
-	return a2 / (PI*d*d);
-}
 
 float3 Dgtr(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
 	float3 h = (l - v) / length(l - v);
@@ -223,6 +214,30 @@ float3 Dgtr(in float3 l, in float3 v, in float3 n, in float3 albedo, in float ro
 	return albedo / pow((pow(roughness, 2) * CosThetaH_Pow2 + 1 - CosThetaH_Pow2), 2);
 }
 
+
+
+
+float3 DisneyDiffuse(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
+{
+	float FD90 = 0.5 + 2.0 * Roughness * VoH * VoH;
+	float FdV = 1.0 + (FD90 - 1.0) * pow(1.0 - NoL, 5);
+	float FdL = 1.0 + (FD90 - 1.0) * pow(1.0 - NoV, 5);
+	return (DiffuseColor / PI) * FdV * FdL;
+}
+
+
+
+//Cook-Torrance BRDF
+//float3 Cook_Torrance(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
+//	//float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * Dgtr(l, v, n, albedo, roughness);
+//	float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * DGGX(Noh, roughness);
+//	//; G2(l, v, n)// *Dgtr(l, v, n, albedo, roughness);
+//	return temp / (3.14 * saturate(dot(n, l)) * saturate(dot(n, -v)));
+//}
+
+//***************************************************************************
+//****************------ New Shading functions -------***************************
+//***************************************************************************
 float3 Diffuse_OrenNayar(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
 {
 	float a = Roughness * Roughness;
@@ -233,15 +248,6 @@ float3 Diffuse_OrenNayar(float3 DiffuseColor, float Roughness, float NoV, float 
 	float C1 = 1 - 0.5 * s2 / (s2 + 0.33);
 	float C2 = 0.45 * s2 / (s2 + 0.09) * Cosri * (Cosri >= 0 ? rcp(max(NoL, NoV)) : 1);
 	return DiffuseColor / PI * (C1 + C2) * (1 + Roughness * 0.5);
-}
-
-
-float3 DisneyDiffuse(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
-{
-	float FD90 = 0.5 + 2.0 * Roughness * VoH * VoH;
-	float FdV = 1.0 + (FD90 - 1.0) * pow(1.0 - NoL, 5);
-	float FdL = 1.0 + (FD90 - 1.0) * pow(1.0 - NoV, 5);
-	return (DiffuseColor / PI) * FdV * FdL;
 }
 
 float Pow5(float x)
@@ -266,16 +272,30 @@ float3 F_Schlick(float3 SpecularColor, float VoH)
 
 	// Anything less than 2% is physically impossible and is instead considered to be shadowing
 	return saturate(50.0 * SpecularColor.g) * Fc + (1 - Fc) * SpecularColor;
-
 }
 
-//Cook-Torrance BRDF
-//float3 Cook_Torrance(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
-//	//float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * Dgtr(l, v, n, albedo, roughness);
-//	float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * DGGX(l, v, n, albedo, roughness);
-//	//; G2(l, v, n)// *Dgtr(l, v, n, albedo, roughness);
-//	return temp / (3.14 * saturate(dot(n, l)) * saturate(dot(n, -v)));
-//}
+float Vis_Schlick(float a2, float NoV, float NoL)
+{
+	float k = sqrt(a2) * 0.5;
+	float Vis_SchlickV = NoV * (1 - k) + k;
+	float Vis_SchlickL = NoL * (1 - k) + k;
+	return 0.25 / (Vis_SchlickV * Vis_SchlickL);
+}
+
+float3 DGGX(in float3 NoH, in float Roughness) {
+
+	float a = Roughness * Roughness;
+	float a2 = a * a;
+	float d = (NoH * a2 - NoH) * NoH + 1;	// 2 mad  ??Warning
+	return a2 / (PI*d*d);
+}
+
+float3 Cook_Torrance(float3 SpecularColor, float Roughness, float NoV, float NoL, float VoH, float NoH) {
+	//float3 temp = (F_Schlick(SpecularColor, VoH))* saturate(Vis_Schlick(Roughness * Roughness, NoV, NoL)) * saturate(DGGX(NoH, Roughness));
+	float3 temp = (F_Schlick(SpecularColor, VoH))* (G2(NoV, NoH, NoL))* (DGGX(NoH, Roughness));//(G2(NoV, NoH, NoL));
+	return temp/ (4 * NoL * NoV);
+}
+
 
 
 //***************************************************************************
@@ -434,7 +454,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 
 	float4 ambient = float4(0.1, 0.1, 0.1, 1.0);
 
-	float3 L = WorldRayDirection();
+	float3 L = -WorldRayDirection();
 	float3 V = Hit2Light;
 	float3 N = hit.normal;
 
@@ -448,23 +468,23 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	float4 fresnelR = float4(F_Schlick(g_cubeCB.albedo.xyz, VoH), 1.0);
 
 
-	//float4 DiffuseColor = float4(Diffuse_OrenNayar(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
-	float4 DiffuseColor = float4(Diffuse_Burley(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
+	float4 DiffuseColor = float4(Diffuse_OrenNayar(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
+	//float4 DiffuseColor = float4(Diffuse_Burley(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
 
 	
 	float4 CookTorranceColor = float4(0, 0, 0, 0);
-	if (!shadowRayHit) {
-		//payload.color += disneyDiColor;
-	}
-	//CookTorranceColor = float4(Cook_Torrance(g_cubeCB.albedo.xyz, normalize(), hit.normal, , g_cubeCB.roughness), 1.0);
+	/*if (!shadowRayHit) {
+		payload.color += disneyDiColor;
+	}*/
+	CookTorranceColor = float4(Cook_Torrance(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH, NoH ), 1.0);
 	// Apply visibility falloff.
 	//float t = RayTCurrent();
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
 	//(1- fresnelR)* DiffuseColor + fresnelR * CookTorranceColor + reflectedColor
 	float4 res = float4(0, 0, 0, 0); 
-	res += (1- fresnelR) * saturate(DiffuseColor);
-	//res += saturate(CookTorranceColor);
+	res +=  saturate(DiffuseColor)  ;//*(1- fresnelR) 
+	res += ((CookTorranceColor) * fresnelR);
 	payload.color = res;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
 
