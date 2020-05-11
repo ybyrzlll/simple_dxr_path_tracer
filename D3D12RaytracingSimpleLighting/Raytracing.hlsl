@@ -236,37 +236,46 @@ float3 Diffuse_OrenNayar(float3 DiffuseColor, float Roughness, float NoV, float 
 }
 
 
-float3 DisneyDiffuse(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness)
+float3 DisneyDiffuse(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
 {
-	//if (dot(l, n) < 0 || dot(-v, n) < 0) return float3(0, 0, 0);
-	v = -v;
-	float3 h = normalize(l + v);
-	/*float CosThetaL = max((dot(l, n)), 0.0);
-	float CosThetaV = max((dot(v, n)), 0.0);*/
-	float CosThetaL = ((dot(l, n)));
-	float CosThetaV = ((dot(v, n)));
-	float CosThetaD = cos((dot(v, h)));
+	float FD90 = 0.5 + 2.0 * Roughness * VoH * VoH;
+	float FdV = 1.0 + (FD90 - 1.0) * pow(1.0 - NoL, 5);
+	float FdL = 1.0 + (FD90 - 1.0) * pow(1.0 - NoV, 5);
+	return (DiffuseColor / PI) * FdV * FdL;
+}
 
-	float FD90 = 0.5 + 2.0 * roughness * CosThetaD * CosThetaD;
-	float FdV = 1.0 + (FD90 - 1.0) * pow(1.0 - CosThetaL, 5);
-	float FdL = 1.0 + (FD90 - 1.0) * pow(1.0 - CosThetaV, 5);
-	return (albedo / PI) * FdV * FdL;
+float Pow5(float x)
+{
+	float xx = x * x;
+	return xx * xx * x;
+}
+
+float3 Diffuse_Burley(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
+{
+	float FD90 = 0.5 + 2 * VoH * VoH * Roughness;
+	float FdV = 1 + (FD90 - 1) * Pow5(1 - NoV);
+	float FdL = 1 + (FD90 - 1) * Pow5(1 - NoL);
+	return DiffuseColor * ((1 / PI) * FdV * FdL);
 }
 
 // Fresnel reflectance - schlick approximation.
-float3 FresnelReflectanceSchlick(in float3 v, in float3 n, in float3 f0)
+float3 F_Schlick(float3 SpecularColor, float VoH)
 {
-	float cosi = saturate(dot(-v, n));
-	return f0 + (1 - f0)*pow(1 - cosi, 5);
+	float Fc = Pow5(1 - VoH);					// 1 sub, 3 mul
+	//return Fc + (1 - Fc) * SpecularColor;		// 1 add, 3 mad
+
+	// Anything less than 2% is physically impossible and is instead considered to be shadowing
+	return saturate(50.0 * SpecularColor.g) * Fc + (1 - Fc) * SpecularColor;
+
 }
 
 //Cook-Torrance BRDF
-float3 Cook_Torrance(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
-	//float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * Dgtr(l, v, n, albedo, roughness);
-	float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * DGGX(l, v, n, albedo, roughness);
-	//; G2(l, v, n)// *Dgtr(l, v, n, albedo, roughness);
-	return temp / (3.14 * saturate(dot(n, l)) * saturate(dot(n, -v)));
-}
+//float3 Cook_Torrance(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
+//	//float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * Dgtr(l, v, n, albedo, roughness);
+//	float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * DGGX(l, v, n, albedo, roughness);
+//	//; G2(l, v, n)// *Dgtr(l, v, n, albedo, roughness);
+//	return temp / (3.14 * saturate(dot(n, l)) * saturate(dot(n, -v)));
+//}
 
 
 //***************************************************************************
@@ -403,7 +412,6 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 		return;
 	}
 
-	float4 fresnelR = float4(FresnelReflectanceSchlick(WorldRayDirection(), hit.normal, g_cubeCB.albedo.xyz), 1);
 
 	float3 hitPosition = HitWorldPosition() + hit.normal * 0.05;
 	float3 Hit2Light = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
@@ -435,9 +443,14 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	float VoL = dot(V, L);
 	float InvLenH = rsqrt(2 + 2 * VoL);
 	float NoH = saturate((NoL + NoV) * InvLenH);
-	float VoH = saturate(InvLenH + InvLenH * VoL);
+	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
 
-	float4 DiffuseColor = float4(Diffuse_OrenNayar(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
+	float4 fresnelR = float4(F_Schlick(g_cubeCB.albedo.xyz, VoH), 1.0);
+
+
+	//float4 DiffuseColor = float4(Diffuse_OrenNayar(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
+	float4 DiffuseColor = float4(Diffuse_Burley(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
+
 	
 	float4 CookTorranceColor = float4(0, 0, 0, 0);
 	if (!shadowRayHit) {
@@ -449,7 +462,8 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
 	//(1- fresnelR)* DiffuseColor + fresnelR * CookTorranceColor + reflectedColor
-	float4 res = saturate(DiffuseColor);// +CookTorranceColor;
+	float4 res = float4(0, 0, 0, 0); 
+	res += (1- fresnelR) * saturate(DiffuseColor);
 	//res += saturate(CookTorranceColor);
 	payload.color = res;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }

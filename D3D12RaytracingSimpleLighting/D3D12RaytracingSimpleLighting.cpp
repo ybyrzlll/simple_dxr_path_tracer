@@ -115,7 +115,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	{
 		//m_materialCB.albedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		m_materialCB = { XMFLOAT4(0.9f, 0.9f, 0.9f, 1.0f),//albedo
-			0.8f,//roughness
+			0.5f,//roughness
 			0.5f,
 			0.5f, 
 			0.25f,
