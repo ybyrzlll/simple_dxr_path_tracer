@@ -114,8 +114,8 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	// Setup materials.
 	{
 		//m_materialCB.albedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_materialCB = { XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f),//albedo
-			0.4f,//roughness
+		m_materialCB = { XMFLOAT4(0.9f, 0.9f, 0.9f, 1.0f),//albedo
+			0.8f,//roughness
 			0.5f,
 			0.5f, 
 			0.25f,
@@ -128,7 +128,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	// Setup camera.
 	{
 		// Initialize the view and projection inverse matrices.
-		m_eye = { 5.0f, 10.0f, -5.0f, 1.0f };
+		m_eye = { 3.0f, 7.0f, -3.0f, 1.0f };
 		m_at = { 0.0f, 0.0f, 0.0f, 1.0f };
 		m_up = { 0.0f, 1.0f, 0.0f, 1.0f };
 
@@ -144,18 +144,20 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	{
 		// Initialize the lighting parameters.
 		XMFLOAT4 lightPosition;
-		XMFLOAT4 lightAmbientColor;
+		XMFLOAT4 lightColor;
 		XMFLOAT4 lightDiffuseColor;
 
-		lightPosition = XMFLOAT4(0.0f, 5.8f, -2.0f, 0.0f);
+		lightPosition = XMFLOAT4(-2.0f, 5.8f, -2.0f, 0.0f);
 		m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
-		lightAmbientColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-		m_sceneCB[frameIndex].lightAmbientColor = XMLoadFloat4(&lightAmbientColor);
+		lightColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+		m_sceneCB[frameIndex].lightColor = XMLoadFloat4(&lightColor);
 
 		lightDiffuseColor = XMFLOAT4(0.5f, 0.0f, 0.0f, 1.0f);
 		m_sceneCB[frameIndex].lightDiffuseColor = XMLoadFloat4(&lightDiffuseColor);
 	}
+
+	m_sceneCB[frameIndex].frame_num = 0;
 
 	// Apply the initial values to all frames' buffer instances.
 	for (auto& sceneCB : m_sceneCB)
@@ -389,7 +391,7 @@ void D3D12RaytracingSimpleLighting::CreateRaytracingPipelineStateObject()
 	auto pipelineConfig = raytracingPipeline.CreateSubobject<CD3D12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
 	// PERFOMANCE TIP: Set max recursion depth as low as needed 
 	// as drivers may apply optimization strategies for low recursion depths.
-	UINT maxRecursionDepth = 4;// MAX_RAY_RECURSION_DEPTH; // ~ primary rays only. 
+	UINT maxRecursionDepth = MAX_RAY_RECURSION_DEPTH;// MAX_RAY_RECURSION_DEPTH; // ~ primary rays only. 
 	pipelineConfig->Config(maxRecursionDepth);
 
 #if _DEBUG
@@ -455,7 +457,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	m_vertexBuffer.resize(ModelCount);
 
 	//创建作为AC的顶点数据buffer
-	BuildPlane();
+	//BuildPlane();
 	BuildCube();
 	//BuildSphere();
 
@@ -685,7 +687,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 
 
 	//Instance Buffer
-	UINT NumInstance = 2;
+	UINT NumInstance = 1;
 	ComPtr<ID3D12Resource> instanceDescs;
 	{
 		vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instanceDesc;
@@ -693,13 +695,13 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		
 		//plane
 		instanceDesc[0].Transform[1][3] = -1;
-		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 3;
+		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
 
 		//cube
-		instanceDesc[1].Transform[1][3] = 0;
+		/*instanceDesc[1].Transform[1][3] = 0;
 		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 1;
-		instanceDesc[1].InstanceMask = 1;
+		instanceDesc[1].InstanceMask = 1;*/
 
 		//sphere
 		//instanceDesc[2].Transform[0][3] = -3;
@@ -711,8 +713,8 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		//instanceDesc[3].InstanceMask = 1;
 
 		//指定实例对应的BLAS
-		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
-		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
+		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
+		//instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
 		/*instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];*/
 
@@ -992,8 +994,10 @@ void D3D12RaytracingSimpleLighting::OnUpdate()
 		float angleToRotateBy = -360.0f * (elapsedTime / secondsToRotateAround);
 		XMMATRIX rotate = XMMatrixRotationY(XMConvertToRadians(angleToRotateBy));
 		const XMVECTOR& prevLightPosition = m_sceneCB[prevFrameIndex].lightPosition;
-		m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
+		//m_sceneCB[frameIndex].lightPosition = XMVector3Transform(prevLightPosition, rotate);
 	}
+
+	m_sceneCB[frameIndex].frame_num++;
 }
 
 

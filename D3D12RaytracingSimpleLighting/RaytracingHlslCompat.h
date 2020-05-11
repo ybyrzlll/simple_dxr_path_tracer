@@ -31,9 +31,11 @@ using namespace DirectX;
 
 // PERFORMANCE TIP: Set max recursion depth as low as needed
 // as drivers may apply optimization strategies for low recursion depths.
-#define MAX_RAY_RECURSION_DEPTH 3    // ~ primary rays + reflections + shadow rays from reflected geometry.
+#define MAX_RAY_RECURSION_DEPTH 2    // ~ primary rays + reflections + shadow rays from reflected geometry.
 
-#define Sample_Num 4
+#define Sample_Num 1
+
+#define PI 3.1415926535
 
 // Shader will use byte encoding to access indices.
 typedef uint32_t Index;
@@ -64,8 +66,9 @@ struct SceneConstantBuffer
     XMMATRIX projectionToWorld;
     XMVECTOR cameraPosition;
     XMVECTOR lightPosition;
-    XMVECTOR lightAmbientColor;
+    XMVECTOR lightColor;
     XMVECTOR lightDiffuseColor;
+	UINT frame_num;
 };
 
 struct MaterialConstantBuffer
@@ -141,6 +144,6 @@ namespace TraceRayParameters
 }
 
 static const float InShadowRadiance = 0.35f;
-static const XMFLOAT4 BackgroundColor = XMFLOAT4(0.0f, 0.2f, 0.4f, 1.0f);
+static const XMFLOAT4 BackgroundColor = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
 
 #endif // RAYTRACINGHLSLCOMPAT_H
