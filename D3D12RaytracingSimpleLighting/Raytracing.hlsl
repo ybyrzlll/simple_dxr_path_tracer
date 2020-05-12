@@ -207,11 +207,9 @@ float Gue4(in float3 l, in float3 v, in float3 n, in float roughness) {
 }
 
 
-float3 Dgtr(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
-	float3 h = (l - v) / length(l - v);
-	float CosThetaH = saturate(dot(n, h)) / (length(n)*length(h));
-	float CosThetaH_Pow2 = pow(CosThetaH, 2);
-	return albedo / pow((pow(roughness, 2) * CosThetaH_Pow2 + 1 - CosThetaH_Pow2), 2);
+float3 Dgtr(in float3 SpecularColor, in float NoH, in float roughness) {
+	float NoH2 = pow(NoH, 2);
+	return SpecularColor / pow((roughness * roughness * NoH2 + 1 - NoH2), 2);
 }
 
 
@@ -282,8 +280,8 @@ float Vis_Schlick(float a2, float NoV, float NoL)
 	return 0.25 / (Vis_SchlickV * Vis_SchlickL);
 }
 
-float3 DGGX(in float3 NoH, in float Roughness) {
-
+float3 DGGX(in float NoH, in float Roughness) 
+{
 	float a = Roughness * Roughness;
 	float a2 = a * a;
 	float d = (NoH * a2 - NoH) * NoH + 1;	// 2 mad  ??Warning
@@ -292,8 +290,10 @@ float3 DGGX(in float3 NoH, in float Roughness) {
 
 float3 Cook_Torrance(float3 SpecularColor, float Roughness, float NoV, float NoL, float VoH, float NoH) {
 	//float3 temp = (F_Schlick(SpecularColor, VoH))* saturate(Vis_Schlick(Roughness * Roughness, NoV, NoL)) * saturate(DGGX(NoH, Roughness));
-	float3 temp = (F_Schlick(SpecularColor, VoH))* (G2(NoV, NoH, NoL))* (DGGX(NoH, Roughness));//(G2(NoV, NoH, NoL));
-	return temp/ (4 * NoL * NoV);
+	float3 temp = (F_Schlick(SpecularColor, VoH))* (G2(NoV, NoH, NoL)) *(DGGX(NoH, Roughness));//(G2(NoV, NoH, NoL)); 
+	//float3 temp = (F_Schlick(SpecularColor, VoH)) * (G2(NoV, NoH, NoL)) * Dgtr(SpecularColor, NoH, Roughness);
+	float temp2 = clamp(PI * NoL * NoV, 0.01, 0.99);
+	return temp/ (PI * NoL * NoV);
 }
 
 
@@ -483,8 +483,8 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 
 	//(1- fresnelR)* DiffuseColor + fresnelR * CookTorranceColor + reflectedColor
 	float4 res = float4(0, 0, 0, 0); 
-	res +=  saturate(DiffuseColor)  ;//*(1- fresnelR) 
-	res += ((CookTorranceColor) * fresnelR);
+	//res +=  saturate(DiffuseColor)  ;//*(1- fresnelR) 
+	res += (CookTorranceColor) *fresnelR;
 	payload.color = res;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
 
