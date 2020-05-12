@@ -197,13 +197,13 @@ float G2(in float NoV, in float NoH, in float NoL) {
 	return min(res, 1);
 }
 
-float G1(in float3 v, in float3 n, in float roughness) {
-	float k = pow(roughness + 1, 2) / 8;
-	return saturate(dot(v, n)) / (saturate(dot(v, n))*(1 - k) + k);
+float G1(in float NoV, in float roughness) {
+	float k = pow(roughness + 1.0, 2) / 8.0;
+	return NoV / (NoV*(1.0 - k) + k);
 }
 
-float Gue4(in float3 l, in float3 v, in float3 n, in float roughness) {
-	return G1(l, n, roughness) * G1(-v, n, roughness);
+float Gue4(float NoV, float NoL, in float roughness) {
+	return G1(NoV, roughness) * G1(NoL, roughness);
 }
 
 
@@ -211,9 +211,6 @@ float3 Dgtr(in float3 SpecularColor, in float NoH, in float roughness) {
 	float NoH2 = pow(NoH, 2);
 	return SpecularColor / pow((roughness * roughness * NoH2 + 1 - NoH2), 2);
 }
-
-
-
 
 float3 DisneyDiffuse(float3 DiffuseColor, float Roughness, float NoV, float NoL, float VoH)
 {
@@ -223,15 +220,13 @@ float3 DisneyDiffuse(float3 DiffuseColor, float Roughness, float NoV, float NoL,
 	return (DiffuseColor / PI) * FdV * FdL;
 }
 
+// Fresnel reflectance - schlick approximation.
+float3 FresnelReflectanceSchlick(in float NoL, in float3 f0)
+{
+	return f0 + (1 - f0)*pow(1 - NoL, 5);
+}
 
 
-//Cook-Torrance BRDF
-//float3 Cook_Torrance(in float3 l, in float3 v, in float3 n, in float3 albedo, in float roughness) {
-//	//float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * Dgtr(l, v, n, albedo, roughness);
-//	float3 temp = FresnelReflectanceSchlick(v, n, albedo)* Gue4(l, v, n, roughness) * DGGX(Noh, roughness);
-//	//; G2(l, v, n)// *Dgtr(l, v, n, albedo, roughness);
-//	return temp / (3.14 * saturate(dot(n, l)) * saturate(dot(n, -v)));
-//}
 
 //***************************************************************************
 //****************------ New Shading functions -------***************************
@@ -288,7 +283,7 @@ float3 DGGX(in float NoH, in float Roughness)
 	return a2 / (PI*d*d);
 }
 
-float3 Cook_Torrance(float3 SpecularColor, float Roughness, float NoV, float NoL, float VoH, float NoH) {
+float3 Cook_Torrance(in float3 SpecularColor, in float Roughness, in float NoV, in float NoL, in float VoH, in float NoH) {
 	//float3 temp = (F_Schlick(SpecularColor, VoH))* saturate(Vis_Schlick(Roughness * Roughness, NoV, NoL)) * saturate(DGGX(NoH, Roughness));
 	float3 temp = (F_Schlick(SpecularColor, VoH))* (G2(NoV, NoH, NoL)) *(DGGX(NoH, Roughness));//(G2(NoV, NoH, NoL)); 
 	//float3 temp = (F_Schlick(SpecularColor, VoH)) * (G2(NoV, NoH, NoL)) * Dgtr(SpecularColor, NoH, Roughness);
@@ -296,7 +291,12 @@ float3 Cook_Torrance(float3 SpecularColor, float Roughness, float NoV, float NoL
 	return temp/ (PI * NoL * NoV);
 }
 
-
+//Cook-Torrance BRDF
+float3 Cook_Torrance2(in float3 SpecularColor, in float Roughness, in float NoV, in float NoL, in float VoH, in float NoH) {
+	//float3 temp = FresnelReflectanceSchlick(NoL, SpecularColor)* Gue4(NoV, NoL, Roughness) * Dgtr(SpecularColor, NoH, Roughness);//* DGGX(NoH, Roughness)
+	float3 temp = F_Schlick(SpecularColor, VoH) * Gue4(NoV, NoL, Roughness) * DGGX(NoH, Roughness);//* DGGX(NoH, Roughness)
+	return temp / (PI * NoL * NoV);
+}
 
 //***************************************************************************
 //*****------ TraceRay wrappers for radiance and shadow rays. -------********
@@ -476,7 +476,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	/*if (!shadowRayHit) {
 		payload.color += disneyDiColor;
 	}*/
-	CookTorranceColor = float4(Cook_Torrance(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH, NoH ), 1.0);
+	CookTorranceColor = float4(Cook_Torrance2(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH, NoH ), 1.0);
 	// Apply visibility falloff.
 	//float t = RayTCurrent();
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
