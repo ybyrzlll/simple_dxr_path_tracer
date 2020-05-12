@@ -460,7 +460,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	//创建作为AC的顶点数据buffer
 	BuildPlane();
 	BuildCube();
-	//BuildSphere();
+	BuildSphere();
 
 	//创建作为shader使用的顶点数据buffer
 
@@ -485,29 +485,28 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		all_indices.insert(all_indices.end(), model.indices[i].begin(), model.indices[i].end());
 	}
 
-	
-
 	std::vector<Material> materials;
 	materials.resize(ModelCount);
 	materials[0].color_ambient = { 0,0,0,0 };
-	materials[0].color_diffuse = { 0,1,0,0 };
+	materials[0].color_diffuse = { 0,0.0,0,0 };
 	materials[0].color_emissive = { 0,0,0,0 };
 	materials[0].color_specular = { 0,0,0,0 };
-	materials[0].emission = 1;
+	materials[0].emission = { 0.9, 0.8,0.7,0 };
 	materials[0].metallic = 0.1;
 	materials[0].roughness = 0.1;
 	materials[0].specular = 0.1;
 	meshes[0].material = 0;
 
 	materials[1].color_ambient = { 0,0,0,0 };
-	materials[1].color_diffuse = { 1,1,0,0 };
+	materials[1].color_diffuse = { 0.6, 0.0,0.0,0 };
 	materials[1].color_emissive = { 0,0,0,0 };
 	materials[1].color_specular = { 0,0,0,0 };
-	materials[1].emission = 0;
-	materials[1].metallic = 0.1;
-	materials[1].roughness = 0.1;
-	materials[1].specular = 0.1;
+	materials[1].emission = { 0,0,0,0 };
+	materials[1].metallic = 0.5;
+	materials[1].roughness = 0.5;
+	materials[1].specular = 0.5;
 	meshes[1].material = 1;
+	meshes[2].material = 1;
 
 	AllocateUploadBuffer(device, materials.data(), static_cast<UINT>(materials.size() * sizeof(Material)), &materials_buffer->buffer_);
 	AllocateUploadBuffer(device, meshes.data(), static_cast<UINT>(meshes.size() * sizeof(Mesh)), &meshes_buffer->buffer_);
@@ -569,7 +568,7 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\cube.txt", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\sphere32.obj", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices;
@@ -713,7 +712,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 
 
 	//Instance Buffer
-	UINT NumInstance = 2;
+	UINT NumInstance = 3;
 	ComPtr<ID3D12Resource> instanceDescs;
 	{
 		vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instanceDesc;
@@ -734,9 +733,11 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
 
 		//sphere
-		//instanceDesc[2].Transform[0][3] = -3;
-		//instanceDesc[2].Transform[0][0] = instanceDesc[2].Transform[1][1] = instanceDesc[2].Transform[2][2] = instanceDesc[2].Transform[3][3] = 1;
-		//instanceDesc[2].InstanceMask = 1;
+		instanceDesc[2].Transform[1][3] = -2;
+		instanceDesc[2].Transform[0][0] = instanceDesc[2].Transform[1][1] = instanceDesc[2].Transform[2][2] = instanceDesc[2].Transform[3][3] = 1;
+		instanceDesc[2].InstanceMask = 1;
+		instanceDesc[2].InstanceID = 2;
+		instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
 		////instanceDesc[3].Transform[0][3] = -3;
 		//instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 1;

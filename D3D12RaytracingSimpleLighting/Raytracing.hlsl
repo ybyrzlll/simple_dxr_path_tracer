@@ -47,70 +47,72 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float3 brdfCos
 	}*/
 
 	//else if (reflectType == Metal)
-	{
-		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
-		HN = H.z;
-		H = applyRotationMappingZToN(N, H);
-		OH = dot(O, H);
-
-		I = 2 * OH * H - O;
-		IN = dot(I, N);
-
-		if (IN < 0)
-		{
-			brdfEval = 0;
-			sampleProb = 0;		// sampleProb = D*HN / (4*abs(OH));  if allowing sample negative hemisphere
-		}
-		else
-		{
-			float D = TrowbridgeReitz(HN*HN, alpha2);
-			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
-			float3 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
-			brdfEval = ((D * G) / (4 * IN * ON)) * F;
-			sampleProb = D * HN / (4 * OH);		// IN > 0 imply OH > 0
-		}
-	}
-
-	//else if (reflectType == Plastic)
 	//{
-	//	float r = mtl.reflectivity;
+	//	H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
+	//	HN = H.z;
+	//	H = applyRotationMappingZToN(N, H);
+	//	OH = dot(O, H);
 
-	//	if (rnd(seed) < r)
-	//	{
-	//		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
-	//		HN = H.z;
-	//		H = applyRotationMappingZToN(N, H);
-	//		OH = dot(O, H);
-
-	//		I = 2 * OH * H - O;
-	//		IN = dot(I, N);
-	//	}
-	//	else
-	//	{
-	//		I = sample_hemisphere_cos(seed);
-	//		IN = I.z;
-	//		I = applyRotationMappingZToN(N, I);
-
-	//		H = O + I;
-	//		H = (1 / length(H)) * H;
-	//		HN = dot(H, N);
-	//		OH = dot(O, H);
-	//	}
+	//	I = 2 * OH * H - O;
+	//	IN = dot(I, N);
 
 	//	if (IN < 0)
 	//	{
 	//		brdfEval = 0;
-	//		sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
+	//		sampleProb = 0;		// sampleProb = D*HN / (4*abs(OH));  if allowing sample negative hemisphere
 	//	}
 	//	else
 	//	{
 	//		float D = TrowbridgeReitz(HN*HN, alpha2);
 	//		float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
-	//		float3 spec = ((D * G) / (4 * IN * ON));
-	//		brdfEval = r * spec + (1 - r) * InvPi * albedo;
-	//		sampleProb = r * (D*HN / (4 * OH)) + (1 - r) * (InvPi * IN);
+	//		float3 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
+	//		brdfEval = ((D * G) / (4 * IN * ON)) * F;
+	//		sampleProb = D * HN / (4 * OH);		// IN > 0 imply OH > 0
 	//	}
 	//}
+
+	//else if (reflectType == Plastic)
+	{
+		/*float metallic;
+		float specular;*/
+		float r = mtl.specular;
+
+		if (rnd(seed) < r)
+		{
+			H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
+			HN = H.z;
+			H = applyRotationMappingZToN(N, H);
+			OH = dot(O, H);
+
+			I = 2 * OH * H - O;
+			IN = dot(I, N);
+		}
+		else
+		{
+			I = sample_hemisphere_cos(seed);
+			IN = I.z;
+			I = applyRotationMappingZToN(N, I);
+
+			H = O + I;
+			H = (1 / length(H)) * H;
+			HN = dot(H, N);
+			OH = dot(O, H);
+		}
+
+		if (IN < 0)
+		{
+			brdfEval = 0;
+			sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
+		}
+		else
+		{
+			float D = TrowbridgeReitz(HN*HN, alpha2);
+			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
+			float3 spec = ((D * G) / (4 * IN * ON));
+			brdfEval = r * spec + (1 - r) * InvPi * albedo;
+			sampleProb = r * (D*HN / (4 * OH)) + (1 - r) * (InvPi * IN);
+		}
+	}
 
 	sampleDir = I;
 	brdfCos = brdfEval * IN;
@@ -343,9 +345,9 @@ void MyRaygenShader()
 void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 {
 	ShadingData hit = GetShadingData(attr);
-	if (hit.material.emission) //光源
+	if (any(hit.material.emission)) //光源
 	{
-		payload.color = float4(0.9, 0.9, 0.9, 1.0);
+		payload.color = hit.material.emission;
 		return;
 	}
 	payload.color = float4(0, 1, 0, 1.0);
@@ -390,7 +392,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 		
 	Ray sampleRay = { HitWorldPosition(), sampleDir };
 	payload.attenuation = brdfCos / sampleProb;
-	float color = payload.attenuation * float4(float3(1,1,1)/ sampleProb, 1);// brdfCos/ 
+	float color = payload.attenuation * float4(brdfCos / sampleProb, 1);// brdfCos/sampleProb
 	payload.attenuation *= payload.attenuation;
 
 	float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
