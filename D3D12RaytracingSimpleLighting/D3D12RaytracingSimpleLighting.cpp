@@ -262,6 +262,7 @@ void D3D12RaytracingSimpleLighting::CreateRootSignatures()
 		rootParameters[GlobalRootSignatureParams::Meshes].InitAsShaderResourceView(CPP_REGISTER_MESHES);
 		rootParameters[GlobalRootSignatureParams::Vertices].InitAsShaderResourceView(CPP_REGISTER_VERTICES);
 		rootParameters[GlobalRootSignatureParams::Indices].InitAsShaderResourceView(CPP_REGISTER_INDICES);
+		rootParameters[GlobalRootSignatureParams::Materials].InitAsShaderResourceView(CPP_REGISTER_MATERIALS);
 
 		CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
 		SerializeAndCreateRaytracingRootSignature(globalRootSignatureDesc, &m_raytracingGlobalRootSignature);
@@ -468,6 +469,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	meshes_buffer = new rtrt::Buffer();
 	all_vertices_buffer = new rtrt::Buffer();
 	all_indices_buffer = new rtrt::Buffer();
+	materials_buffer = new rtrt::Buffer();
 
 	meshes.resize(ModelCount);
 	std::vector<Vertex> all_vertices;
@@ -483,10 +485,34 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		all_indices.insert(all_indices.end(), model.indices[i].begin(), model.indices[i].end());
 	}
 
+	
+
+	std::vector<Material> materials;
+	materials.resize(ModelCount);
+	materials[0].color_ambient = { 0,0,0,0 };
+	materials[0].color_diffuse = { 0,0,0,0 };
+	materials[0].color_emissive = { 0,0,0,0 };
+	materials[0].color_specular = { 0,0,0,0 };
+	materials[0].emission = 1;
+	materials[0].metallic = 0.1;
+	materials[0].roughness = 0.1;
+	materials[0].specular = 0.1;
+	meshes[0].material = 0;
+
+	materials[1].color_ambient = { 0,0,0,0 };
+	materials[1].color_diffuse = { 0,0,0,0 };
+	materials[1].color_emissive = { 0,0,0,0 };
+	materials[1].color_specular = { 0,0,0,0 };
+	materials[1].emission = 0;
+	materials[1].metallic = 0.1;
+	materials[1].roughness = 0.1;
+	materials[1].specular = 0.1;
+	meshes[1].material = 1;
+
+	AllocateUploadBuffer(device, materials.data(), static_cast<UINT>(materials.size() * sizeof(Material)), &materials_buffer->buffer_);
 	AllocateUploadBuffer(device, meshes.data(), static_cast<UINT>(meshes.size() * sizeof(Mesh)), &meshes_buffer->buffer_);
 	AllocateUploadBuffer(device, all_vertices.data(), static_cast<UINT>(all_vertices.size() * sizeof(Vertex)), &all_vertices_buffer->buffer_);
 	AllocateUploadBuffer(device, all_indices.data(), static_cast<UINT>(all_indices.size() * sizeof(Index)), &all_indices_buffer->buffer_);
-
 }
 
 void D3D12RaytracingSimpleLighting::BuildPlane()
@@ -697,11 +723,15 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[0].Transform[1][3] = -1;
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
+		instanceDesc[0].InstanceID = 0;
+		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
 
 		//plane
 		instanceDesc[1].Transform[1][3] = -3;
 		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 3;
 		instanceDesc[1].InstanceMask = 1;
+		instanceDesc[1].InstanceID = 1;
+		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
 
 		//sphere
 		//instanceDesc[2].Transform[0][3] = -3;
@@ -716,11 +746,9 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		/*instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
 		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];*/
 
-		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
-		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
-
 		/*instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];*/
+
 
 		UINT64 bufferSize = static_cast<UINT64>(instanceDesc.size() * sizeof(instanceDesc[0]));
 		AllocateUploadBuffer(device, instanceDesc.data(), bufferSize, &instanceDescs, L"InstanceDescs");
@@ -1054,6 +1082,7 @@ void D3D12RaytracingSimpleLighting::DoRaytracing()
 		commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::Meshes, meshes_buffer->GetBuffer()->GetGPUVirtualAddress());
 		commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::Vertices, all_vertices_buffer->GetBuffer()->GetGPUVirtualAddress());
 		commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::Indices, all_indices_buffer->GetBuffer()->GetGPUVirtualAddress());
+		commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::Materials, materials_buffer->GetBuffer()->GetGPUVirtualAddress());
 		commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, m_raytracingOutputResourceUAVGpuDescriptor);
 	};
 

@@ -23,6 +23,7 @@ namespace GlobalRootSignatureParams {
 		Meshes,
 		Vertices,
 		Indices,
+		Materials,
         Count 
     };
 }
@@ -123,6 +124,7 @@ private:
 	rtrt::Buffer* meshes_buffer = nullptr;
 	rtrt::Buffer* all_vertices_buffer = nullptr;
 	rtrt::Buffer* all_indices_buffer = nullptr;
+	rtrt::Buffer* materials_buffer = nullptr;
 
     // Acceleration structure
 	rtrt::AccelerationStructure m_bottomLevelAccelerationStructure;

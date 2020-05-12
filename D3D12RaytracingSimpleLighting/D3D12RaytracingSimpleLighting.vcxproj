@@ -209,6 +209,7 @@ PrebuildCheck.bat</Command>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="model.hlsli" />
     <None Include="packages.config" />
     <None Include="readme.md" />
     <None Include="sampling.hlsli" />

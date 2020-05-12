@@ -106,6 +106,9 @@
     <None Include="sampling.hlsli">
       <Filter>Assets\Shaders</Filter>
     </None>
+    <None Include="model.hlsli">
+      <Filter>Assets\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Raytracing.hlsl" />

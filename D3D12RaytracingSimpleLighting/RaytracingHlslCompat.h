@@ -26,6 +26,8 @@ using namespace DirectX;
 #define CPP_REGISTER_INDICES 3
 #define HLSL_REGISTER_INDICES t3
 
+#define CPP_REGISTER_MATERIALS 4
+#define HLSL_REGISTER_MATERIALS t4
 
 #endif
 
@@ -58,7 +60,7 @@ struct Mesh
 {
 	UINT first_idx_vertices;
 	UINT first_idx_indices;
-	//UINT material;
+	UINT material;
 };
 
 struct SceneConstantBuffer
@@ -86,6 +88,18 @@ struct MaterialConstantBuffer
 										  // - Some object transformations don't preserve the distances and 
 										  //   thus require shorter steps.
 	XMFLOAT3 padding;
+};
+
+struct Material
+{
+	XMFLOAT4 color_emissive;
+	XMFLOAT4 color_ambient;
+	XMFLOAT4 color_diffuse;
+	XMFLOAT4 color_specular;
+	float roughness;
+	float metallic;
+	float specular;
+	UINT emission;
 };
 
 struct Vertex
