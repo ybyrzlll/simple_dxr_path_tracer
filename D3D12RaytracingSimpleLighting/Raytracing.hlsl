@@ -483,7 +483,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 
 	//(1- fresnelR)* DiffuseColor + fresnelR * CookTorranceColor + reflectedColor
 	float4 res = float4(0, 0, 0, 0); 
-	//res +=  saturate(DiffuseColor)  ;//*(1- fresnelR) 
+	res +=  saturate(DiffuseColor)*(1 - fresnelR);//*(1- fresnelR) 
 	res += (CookTorranceColor) *fresnelR;
 	payload.color = res;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
