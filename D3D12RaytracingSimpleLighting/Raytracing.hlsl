@@ -118,7 +118,7 @@ inline ShadingData GetShadingData(TriangleAttributes attr)
 	data.emissive = material.emissive_map != MATERIAL_NO_TEXTURE_INDEX ? SampleTexture(scene_sampler, scene_textures[material.emissive_map], vertex.uv).xyz : material.color_emissive.xyz;
 	data.index_of_refraction = material.index_of_refraction;
 	data.glossiness = material.glossiness;*/
-	data.material = scene_materials[InstanceID()];//scene_meshes[InstanceID()].material
+	data.material = scene_materials[scene_meshes[InstanceID()].material];//
 
 	return data;
 }
@@ -349,8 +349,7 @@ void MyRaygenShader()
 void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 {
 	ShadingData hit = GetShadingData(attr);
-	//if (hit.material.emission == 1) 
-	if (InstanceID() == 0)
+	if (hit.material.emission == 1) 
 	{
 		payload.color = float4(0.1, 1, 0.1, 1.0);
 		return;
