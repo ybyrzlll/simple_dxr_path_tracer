@@ -16,112 +16,106 @@
 #include "RaytracingHlslCompat.h"
 #include "util.hlsli"
 #include "model.hlsli"
+#include "GetShadingData.hlsli"
+#include "sampling.hlsli"
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u0);
-StructuredBuffer<Mesh> scene_meshes : register(t1);//HLSL_REGISTER_MESHES
-StructuredBuffer<Vertex> Vertices : register(t2);//HLSL_REGISTER_VERTICES
-StructuredBuffer<uint> Indices : register(t3); //HLSL_REGISTER_INDICES
-StructuredBuffer<Material> scene_materials : register(t4);//HLSL_REGISTER_MATERIALS
 
 ConstantBuffer<SceneConstantBuffer> g_sceneCB : register(b0);
-ConstantBuffer<MaterialConstantBuffer> g_cubeCB : register(b1);
 
-//********************************************************************************
-//******************************** GetShadingData ********************************
-//********************************************************************************
-typedef BuiltInTriangleIntersectionAttributes TriangleAttributes;
-
-struct InterpolatedVertex
+void samplingBRDF(out float3 sampleDir, out float sampleProb, out float3 brdfCos,
+	in float3 surfaceNormal, in float3 baseDir, in Material mtl, inout uint seed)
 {
-	float3 position;
-	float3 normal;
-	/*float3 tangent;
-	float3 bitangent;
-	float2 uv;
-	float4 color;*/
-};
 
-struct Triangle
-{
-	Vertex vertices[3];
-};
+	float3 brdfEval;
+	float3 albedo = mtl.color_diffuse;
+	//uint reflectType = mtl.type;
 
-uint3 GetIndices()
-{
-	int prim_idx = PrimitiveIndex();
-	int mesh_idx = InstanceID();
+	float3 I, O = baseDir, N = surfaceNormal, H;
+	float ON = dot(O, N), IN, HN, OH;
+	float alpha2 = mtl.roughness * mtl.roughness;
 
-	return uint3(
-		scene_meshes[mesh_idx].first_idx_vertices + Indices[scene_meshes[mesh_idx].first_idx_indices + (prim_idx * 3) + 0],
-		scene_meshes[mesh_idx].first_idx_vertices + Indices[scene_meshes[mesh_idx].first_idx_indices + (prim_idx * 3) + 1],
-		scene_meshes[mesh_idx].first_idx_vertices + Indices[scene_meshes[mesh_idx].first_idx_indices + (prim_idx * 3) + 2]
-		);
+	//if (reflectType == Lambertian)
+	/*{
+		I = sample_hemisphere_cos(seed);
+		IN = I.z;
+		I = applyRotationMappingZToN(N, I);
+
+		sampleProb = InvPi * IN;
+		brdfEval = InvPi * albedo;
+	}*/
+
+	//else if (reflectType == Metal)
+	{
+		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
+		HN = H.z;
+		H = applyRotationMappingZToN(N, H);
+		OH = dot(O, H);
+
+		I = 2 * OH * H - O;
+		IN = dot(I, N);
+
+		if (IN < 0)
+		{
+			brdfEval = 0;
+			sampleProb = 0;		// sampleProb = D*HN / (4*abs(OH));  if allowing sample negative hemisphere
+		}
+		else
+		{
+			float D = TrowbridgeReitz(HN*HN, alpha2);
+			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
+			float3 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
+			brdfEval = ((D * G) / (4 * IN * ON)) * F;
+			sampleProb = D * HN / (4 * OH);		// IN > 0 imply OH > 0
+		}
+	}
+
+	//else if (reflectType == Plastic)
+	//{
+	//	float r = mtl.reflectivity;
+
+	//	if (rnd(seed) < r)
+	//	{
+	//		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
+	//		HN = H.z;
+	//		H = applyRotationMappingZToN(N, H);
+	//		OH = dot(O, H);
+
+	//		I = 2 * OH * H - O;
+	//		IN = dot(I, N);
+	//	}
+	//	else
+	//	{
+	//		I = sample_hemisphere_cos(seed);
+	//		IN = I.z;
+	//		I = applyRotationMappingZToN(N, I);
+
+	//		H = O + I;
+	//		H = (1 / length(H)) * H;
+	//		HN = dot(H, N);
+	//		OH = dot(O, H);
+	//	}
+
+	//	if (IN < 0)
+	//	{
+	//		brdfEval = 0;
+	//		sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
+	//	}
+	//	else
+	//	{
+	//		float D = TrowbridgeReitz(HN*HN, alpha2);
+	//		float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
+	//		float3 spec = ((D * G) / (4 * IN * ON));
+	//		brdfEval = r * spec + (1 - r) * InvPi * albedo;
+	//		sampleProb = r * (D*HN / (4 * OH)) + (1 - r) * (InvPi * IN);
+	//	}
+	//}
+
+	sampleDir = I;
+	brdfCos = brdfEval * IN;
 }
 
-Triangle GetTriangle()
-{
-	uint3 indices = GetIndices();
-
-	Triangle tri;
-	tri.vertices[0] = Vertices[indices.x];
-	tri.vertices[1] = Vertices[indices.y];
-	tri.vertices[2] = Vertices[indices.z];
-
-	return tri;
-}
-
-InterpolatedVertex CalculateInterpolatedVertex(in Vertex v[3], in float2 barycentrics)
-{
-	float3 bary_factors = CalculateBarycentricalInterpolationFactors(barycentrics);
-
-	InterpolatedVertex vertex;
-	vertex.position = BarycentricInterpolation(v[0].position, v[1].position, v[2].position, bary_factors);
-	vertex.normal = normalize(BarycentricInterpolation(v[0].normal, v[1].normal, v[2].normal, bary_factors));
-	/*vertex.tangent = normalize(BarycentricInterpolation(v[0].tangent, v[1].tangent, v[2].tangent, bary_factors));
-	vertex.bitangent = normalize(cross(vertex.normal, vertex.tangent));
-	vertex.uv = BarycentricInterpolation(v[0].uv, v[1].uv, v[2].uv, bary_factors);
-	vertex.color = BarycentricInterpolation(v[0].color, v[1].color, v[2].color, bary_factors);*/
-
-	return vertex;
-}
-
-struct ShadingData
-{
-	//uint shading_model;
-	float3 position;
-	float3 normal;
-	/*float3 diffuse;
-	float3 emissive;
-	float index_of_refraction;
-	float glossiness;*/
-	Material material;
-};
-
-//inline float4 SampleTexture(in SamplerState samplr, in Texture2D tex, in float2 uv)
-//{
-//	return tex.SampleLevel(samplr, uv, 0, 0);
-//}
-
-inline ShadingData GetShadingData(TriangleAttributes attr)
-{
-	ShadingData data;
-
-	Triangle tri = GetTriangle();
-	InterpolatedVertex vertex = CalculateInterpolatedVertex(tri.vertices, attr.barycentrics);
-	//Material material = scene_materials[scene_meshes[InstanceID()].material];
-
-	//data.shading_model = material.shading_model;
-	data.position = WorldRayOrigin() + (WorldRayDirection() * RayTCurrent());
-	data.normal = normalize(vertex.normal);
-	/*data.diffuse = material.diffuse_map != MATERIAL_NO_TEXTURE_INDEX ? SampleTexture(scene_sampler, scene_textures[material.diffuse_map], vertex.uv).xyz : material.color_diffuse.xyz;
-	data.emissive = material.emissive_map != MATERIAL_NO_TEXTURE_INDEX ? SampleTexture(scene_sampler, scene_textures[material.emissive_map], vertex.uv).xyz : material.color_emissive.xyz;
-	data.index_of_refraction = material.index_of_refraction;
-	data.glossiness = material.glossiness;*/
-	data.material = scene_materials[scene_meshes[InstanceID()].material];//
-
-	return data;
-}
 
 //***************************************************************************
 //****************------ Utility functions -------***************************
@@ -195,7 +189,7 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
 //*****------ TraceRay wrappers for radiance and shadow rays. -------********
 //***************************************************************************
 // Trace a radiance ray into the scene and returns a shaded color.
-float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
+float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth, in UINT seed, in float3 attenuation)
 {
 	if (currentRayRecursionDepth >= MAX_RAY_RECURSION_DEPTH)//MAX_RAY_RECURSION_DEPTH
 	{
@@ -210,7 +204,7 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
 	// Note: make sure to enable face culling so as to avoid surface face fighting.
 	rayDesc.TMin = 0;
 	rayDesc.TMax = 10000;
-	RayPayload rayPayload = { float4(0, 0, 0, 0), currentRayRecursionDepth + 1 };
+	RayPayload rayPayload = { float4(0, 0, 0, 0), currentRayRecursionDepth + 1 , seed, attenuation};
 	//TraceRay(Scene,
 	//	RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
 	//	~0, // instance mask
@@ -327,18 +321,18 @@ void MyRaygenShader()
     
 	float4 color = { 0,0,0,0 };
 
-	uint screen_seed = initRand(g_sceneCB.frame_num, g_sceneCB.frame_num+1, 16);
+	uint seed = initRand(g_sceneCB.frame_num, g_sceneCB.frame_num+1, 16);
 
     // Generate a ray for a camera pixel corresponding to an index from the dispatched 2D grid.
 	[unroll]
 	for (int i = 0; i < Sample_Num; i++) {
-		/*float2 random = float2(nextRand(screen_seed), nextRand(screen_seed));
+		/*float2 random = float2(nextRand(seed), nextRand(seed));
 		GenerateCameraRay((float2)DispatchRaysIndex().xy + random, origin, rayDir);*/
 		GenerateCameraRay((float2)DispatchRaysIndex().xy , origin, rayDir);
 		Ray ray;
 		ray.origin = origin;
 		ray.direction = rayDir;
-		color += TraceRadianceRay(ray, 0);
+		color += TraceRadianceRay(ray, 0, seed, 1.0f);
 	}
     // Write the raytraced color to the output texture.
     RenderTarget[DispatchRaysIndex().xy] = color / Sample_Num;
@@ -349,58 +343,109 @@ void MyRaygenShader()
 void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 {
 	ShadingData hit = GetShadingData(attr);
-	if (hit.material.emission == 1) 
+	if (hit.material.emission) //光源
 	{
-		payload.color = float4(0.1, 1, 0.1, 1.0);
+		payload.color = float4(0.9, 0.9, 0.9, 1.0);
+		return;
+	}
+	payload.color = float4(0, 1, 0, 1.0);
+	//[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
+
+	float3 N = hit.normal, fN, E = -WorldRayDirection();
+	//computeNormal(N, fN, attr);
+	float EN = dot(E, N);// , EfN = dot(E, fN);
+
+	payload.attenuation = 1.0f;
+
+
+	/*if (obj.twoSided && EfN < 0)
+	{
+		mtlIdx = obj.backMaterialIdx;
+		N = -N;
+		EN = -EN;
+	}*/
+
+	if (EN < 0)
+	{
+		/*payload.bounceDir = WorldRayDirection();
+		--payload.rayDepth;*/
 		return;
 	}
 
-	float3 hitPosition = HitWorldPosition() + hit.normal * 0.05;
-	float3 Hit2Light = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
-	Ray shadowRay = { hitPosition,  Hit2Light };
-	bool shadowRayHit = TraceShadowRayAndReportIfHit(shadowRay, payload.recursionDepth);
-	float3 L = WorldRayDirection();
-	float3 V = Hit2Light;
-	float3 N = hit.normal;
+	/*Material mtl = materialBuffer[mtlIdx];
 
-	float4 fresnelR = float4(F_Schlick2(g_cubeCB.albedo.xyz, V, L), 1.0);
-
-	// Reflected component.
-	float4 reflectedColor = float4(0, 0, 0, 0);
-	//if (l_materialCB.reflectanceCoef > 0.001)
+	if (any(mtl.emittance))
 	{
-		//Trace a reflection ray.
-		Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
-		float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
-		reflectedColor = 0.3 * fresnelR * reflectionColor;
-	}
-
-	//float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
-	
-	float4 ambient = float4(0.1, 0.1, 0.1, 1.0);
-	
-	
-
-	float4 DiffuseColor = DiffuseShade(g_cubeCB.albedo.xyz, g_cubeCB.roughness, L, V, N);
-	
-	float4 SpecularColor = float4(0, 0, 0, 0);
-
-	/*if (!shadowRayHit) {
-		payload.color += disneyDiColor;
+		payload.radiance += mtl.emittance;
 	}*/
-	SpecularColor = SpecularShade(g_cubeCB.albedo.xyz, g_cubeCB.roughness, -L, V, N);
 
-	// Apply visibility falloff.
-	//float t = RayTCurrent();
-	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
+	float3 sampleDir, brdfCos;
+	float sampleProb;
+	samplingBRDF(sampleDir, sampleProb, brdfCos, N, E, hit.material, payload.seed);
 
-	//(1- fresnelR)* DiffuseColor + fresnelR * CookTorranceColor + reflectedColor
-	float4 res = float4(0, 0, 0, 0); 
-	//res += saturate(DiffuseColor);// *(1 - fresnelR);//*(1- fresnelR) 
-	//res += saturate(SpecularColor);// *fresnelR;
-	//res += reflectedColor;
-	res += CalculateDiffuseLighting(HitWorldPosition(), hit.normal);
-	payload.color = res;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
+	if (dot(sampleDir, N) <= 0) {
+		//Stop! ==没有折射
+		return; // payload.rayDepth = maxPathLength;
+	}
+		
+	Ray sampleRay = { HitWorldPosition(), sampleDir };
+	payload.attenuation = brdfCos / sampleProb;
+	float color = payload.attenuation * float4(float3(1,1,1)/ sampleProb, 1);// brdfCos/ 
+	payload.attenuation *= payload.attenuation;
+
+	float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
+	payload.color = color;// +sampleColor;
+	//payload.bounceDir = sampleDir;
+
+	//]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+
+
+	//float3 hitPosition = HitWorldPosition() + hit.normal * 0.05;
+	//float3 Hit2Light = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
+	//Ray shadowRay = { hitPosition,  Hit2Light };
+	//bool shadowRayHit = TraceShadowRayAndReportIfHit(shadowRay, payload.recursionDepth);
+	//float3 L = WorldRayDirection();
+	//float3 V = Hit2Light;
+	//float3 N = hit.normal;
+
+	//float4 fresnelR = float4(F_Schlick2(g_cubeCB.albedo.xyz, V, L), 1.0);
+
+	//// Reflected component.
+	//float4 reflectedColor = float4(0, 0, 0, 0);
+	////if (l_materialCB.reflectanceCoef > 0.001)
+	//{
+	//	//Trace a reflection ray.
+	//	Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
+	//	float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
+	//	reflectedColor = 0.3 * fresnelR * reflectionColor;
+	//}
+
+	////float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
+	//
+	//float4 ambient = float4(0.1, 0.1, 0.1, 1.0);
+	//
+	//
+
+	//float4 DiffuseColor = DiffuseShade(g_cubeCB.albedo.xyz, g_cubeCB.roughness, L, V, N);
+	//
+	//float4 SpecularColor = float4(0, 0, 0, 0);
+
+	///*if (!shadowRayHit) {
+	//	payload.color += disneyDiColor;
+	//}*/
+	//SpecularColor = SpecularShade(g_cubeCB.albedo.xyz, g_cubeCB.roughness, -L, V, N);
+
+	//// Apply visibility falloff.
+	////float t = RayTCurrent();
+	////color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
+
+	////(1- fresnelR)* DiffuseColor + fresnelR * CookTorranceColor + reflectedColor
+	//float4 res = float4(0, 0, 0, 0); 
+	////res += saturate(DiffuseColor);// *(1 - fresnelR);//*(1- fresnelR) 
+	////res += saturate(SpecularColor);// *fresnelR;
+	////res += reflectedColor;
+	//res += CalculateDiffuseLighting(HitWorldPosition(), hit.normal);
+	//payload.color = res;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
 
 [shader("miss")]

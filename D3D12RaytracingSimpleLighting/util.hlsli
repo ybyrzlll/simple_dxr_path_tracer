@@ -130,26 +130,6 @@ inline float schlick(in float cosine, in float index_of_refraction)
   return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
-//***************************************************************************
-//****************------ Sample -------**************************************
-//***************************************************************************
 
-float3 SampleDir(inout uint seed) {
-	float3 sampleDir;
-
-	float param1 = nextRand(seed);
-	float param2 = nextRand(seed);
-
-	// Uniformly sample disk.
-	float r = sqrt(param1);
-	float phi = 2.0f * PI * param2;
-	sampleDir.x = r * cos(phi);
-	sampleDir.y = r * sin(phi);
-
-	// Project up to hemisphere.
-	sampleDir.z = sqrt(max(0.0f, 1.0f - r * r));
-
-	return sampleDir;
-}
 
 #endif

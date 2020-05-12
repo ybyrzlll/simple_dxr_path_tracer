@@ -99,7 +99,7 @@ struct Material
 	float roughness;
 	float metallic;
 	float specular;
-	UINT emission;
+	bool emission;
 };
 
 struct Vertex
@@ -112,8 +112,10 @@ struct Vertex
 
 struct RayPayload
 {
-	XMFLOAT4 color;
 	UINT   recursionDepth;
+	XMFLOAT3 attenuation;
+	XMFLOAT4 color;
+	UINT seed;
 };
 
 struct ShadowRayPayload
