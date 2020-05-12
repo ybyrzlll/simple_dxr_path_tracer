@@ -491,7 +491,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	materials[0].color_diffuse = { 0,0.0,0,0 };
 	materials[0].color_emissive = { 0,0,0,0 };
 	materials[0].color_specular = { 0,0,0,0 };
-	materials[0].emission = { 0.9, 0.8,0.7,0 };
+	materials[0].emission = { 1, 1,1,0 };
 	materials[0].metallic = 0.1;
 	materials[0].roughness = 0.1;
 	materials[0].specular = 0.1;
@@ -712,7 +712,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 
 
 	//Instance Buffer
-	UINT NumInstance = 3;
+	UINT NumInstance = 5;
 	ComPtr<ID3D12Resource> instanceDescs;
 	{
 		vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instanceDesc;
@@ -731,6 +731,34 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[1].InstanceMask = 1;
 		instanceDesc[1].InstanceID = 1;
 		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
+
+		//plane
+		{
+		XMMATRIX mScale = XMMatrixScaling(3,3,3);
+		XMVECTOR vTranslation = {-7,2,0};
+		XMMATRIX mTranslation = XMMatrixTranslationFromVector(vTranslation);
+		XMMATRIX mRotation = XMMatrixRotationZ(-PI/2);
+		XMMATRIX mTransform = mScale * mRotation * mTranslation;
+		DirectX::XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(&instanceDesc[3].Transform), mTransform);
+		/*instanceDesc[3].Transform[1][3] = -2;
+		instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 3;*/
+		instanceDesc[3].InstanceMask = 1;
+		instanceDesc[3].InstanceID = 1;
+		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
+		}
+
+		//plane
+		{
+			XMMATRIX mScale = XMMatrixScaling(3, 3, 3);
+			XMVECTOR vTranslation = { 0,2,7 };
+			XMMATRIX mTranslation = XMMatrixTranslationFromVector(vTranslation);
+			XMMATRIX mRotation = XMMatrixRotationX(-PI / 2);
+			XMMATRIX mTransform = mScale * mRotation * mTranslation;
+			DirectX::XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(&instanceDesc[4].Transform), mTransform);
+			instanceDesc[4].InstanceMask = 1;
+			instanceDesc[4].InstanceID = 1;
+			instanceDesc[4].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
+		}
 
 		//sphere
 		instanceDesc[2].Transform[1][3] = -2;
