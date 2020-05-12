@@ -294,7 +294,7 @@ float3 Cook_Torrance(in float3 SpecularColor, in float Roughness, in float NoV, 
 //Cook-Torrance BRDF
 float3 Cook_Torrance2(in float3 SpecularColor, in float Roughness, in float NoV, in float NoL, in float VoH, in float NoH) {
 	//float3 temp = FresnelReflectanceSchlick(NoL, SpecularColor)* Gue4(NoV, NoL, Roughness) * Dgtr(SpecularColor, NoH, Roughness);//* DGGX(NoH, Roughness)
-	float3 temp = F_Schlick(SpecularColor, VoH) * Gue4(NoV, NoL, Roughness) * DGGX(NoH, Roughness);//* DGGX(NoH, Roughness)
+	float3 temp = F_Schlick(SpecularColor, VoH) * saturate(Gue4(NoV, NoL, Roughness)) * DGGX(NoH, Roughness);//* DGGX(NoH, Roughness)
 	return temp / (PI * NoL * NoV);
 }
 
