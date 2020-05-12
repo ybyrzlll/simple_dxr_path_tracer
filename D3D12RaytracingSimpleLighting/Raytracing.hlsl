@@ -186,10 +186,30 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
         attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
         attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
+//***************************************************************************
+//****************------ Sample -------**************************************
+//***************************************************************************
 
+float3 SampleDir(inout uint seed) {
+	float3 sampleDir;
+
+	float param1 = nextRand(seed);
+	float param2 = nextRand(seed);
+
+	// Uniformly sample disk.
+	float r = sqrt(param1);
+	float phi = 2.0f * PI * param2;
+	sampleDir.x = r * cos(phi);
+	sampleDir.y = r * sin(phi);
+
+	// Project up to hemisphere.
+	sampleDir.z = sqrt(max(0.0f, 1.0f - r * r));
+
+	return sampleDir;
+}
 
 //***************************************************************************
-//****************------ Old Shading functions -------***************************
+//****************------ Old Shading functions -------***********************
 //***************************************************************************
 
 float G2(in float NoV, in float NoH, in float NoL) {
@@ -258,8 +278,22 @@ float3 Diffuse_Burley(float3 DiffuseColor, float Roughness, float NoV, float NoL
 }
 
 // Fresnel reflectance - schlick approximation.
-float3 F_Schlick(float3 SpecularColor, float VoH)
+float3 F_Schlick(in float3 SpecularColor, in float VoH)
 {
+	float Fc = Pow5(1 - VoH);					// 1 sub, 3 mul
+	//return Fc + (1 - Fc) * SpecularColor;		// 1 add, 3 mad
+
+	// Anything less than 2% is physically impossible and is instead considered to be shadowing
+	return saturate(50.0 * SpecularColor.g) * Fc + (1 - Fc) * SpecularColor;
+}
+
+// Fresnel reflectance - schlick approximation.
+float3 F_Schlick2(in float3 SpecularColor, in float3 V, in float3 L)
+{
+	float VoL = dot(V, L);
+	float InvLenH = rsqrt(2 + 2 * VoL);
+	float VoH = saturate(InvLenH + InvLenH * VoL);
+
 	float Fc = Pow5(1 - VoH);					// 1 sub, 3 mul
 	//return Fc + (1 - Fc) * SpecularColor;		// 1 add, 3 mad
 
@@ -295,7 +329,7 @@ float3 Cook_Torrance(in float3 SpecularColor, in float Roughness, in float NoV, 
 float3 Cook_Torrance2(in float3 SpecularColor, in float Roughness, in float NoV, in float NoL, in float VoH, in float NoH) {
 	//float3 temp = FresnelReflectanceSchlick(NoL, SpecularColor)* Gue4(NoV, NoL, Roughness) * Dgtr(SpecularColor, NoH, Roughness);//* DGGX(NoH, Roughness)
 	float3 temp = F_Schlick(SpecularColor, VoH) * saturate(Gue4(NoV, NoL, Roughness)) * DGGX(NoH, Roughness);//* DGGX(NoH, Roughness)
-	return temp;// / (PI * NoL * NoV);
+	return temp/ (PI * NoL * NoV);
 }
 
 //***************************************************************************
@@ -366,6 +400,35 @@ bool TraceShadowRayAndReportIfHit(in Ray ray, in UINT currentRayRecursionDepth)
 }
 
 //***************************************************************************
+//********************------ Diffuse Shade.. -------*************************
+//***************************************************************************
+
+float4 DiffuseShade(in float3 DiffuseColor, in float Roughness, in float3 L, in float3 V, in float3 N) {
+	float NoL = saturate(dot(N, L));
+	float NoV = saturate(dot(N, V));
+	float VoL = saturate(dot(V, L));
+	float InvLenH = rsqrt(2 + 2 * VoL);
+	float NoH = saturate((NoL + NoV) * InvLenH);
+	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
+	return float4(Diffuse_OrenNayar(DiffuseColor, Roughness, NoV, NoL, VoH), 1.0);
+	//return float4(Diffuse_Burley(DiffuseColor, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
+}
+
+//***************************************************************************
+//********************------ Specular Shade.. -------*************************
+//***************************************************************************
+
+float4 SpecularShade(in float3 SpecColor, in float Roughness, in float3 L, in float3 V, in float3 N) {
+	float NoL = dot(N, L);
+	float NoV = dot(N, V);
+	float VoL = dot(V, L);
+	float InvLenH = rsqrt(2 + 2 * VoL);
+	float NoH = saturate((NoL + NoV) * InvLenH);
+	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
+	return float4(Cook_Torrance2(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH, NoH), 1.0);
+}
+
+//***************************************************************************
 //********************------ Ray gen shader.. -------************************
 //***************************************************************************
 
@@ -432,59 +495,50 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 		return;
 	}
 
-
 	float3 hitPosition = HitWorldPosition() + hit.normal * 0.05;
 	float3 Hit2Light = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
 	Ray shadowRay = { hitPosition,  Hit2Light };
 	bool shadowRayHit = TraceShadowRayAndReportIfHit(shadowRay, payload.recursionDepth);
+	float3 L = WorldRayDirection();
+	float3 V = Hit2Light;
+	float3 N = hit.normal;
+
+	float4 fresnelR = float4(F_Schlick2(g_cubeCB.albedo.xyz, V, L), 1.0);
 
 	// Reflected component.
 	float4 reflectedColor = float4(0, 0, 0, 0);
 	//if (l_materialCB.reflectanceCoef > 0.001)
 	{
 		//Trace a reflection ray.
-		/*Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
+		Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
 		float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
-		reflectedColor = 0.3 * fresnelR * reflectionColor;*/
+		reflectedColor = 0.3 * fresnelR * reflectionColor;
 	}
 
 	//float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
 	
-	//float4 color = phongColor + reflectedColor;// +reflectedColor;
-
 	float4 ambient = float4(0.1, 0.1, 0.1, 1.0);
-
-	float3 L = -WorldRayDirection();
-	float3 V = Hit2Light;
-	float3 N = hit.normal;
-
-	float NoL = dot(N, L);
-	float NoV = dot(N, V);
-	float VoL = dot(V, L);
-	float InvLenH = rsqrt(2 + 2 * VoL);
-	float NoH = saturate((NoL + NoV) * InvLenH);
-	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
-
-	float4 fresnelR = float4(F_Schlick(g_cubeCB.albedo.xyz, VoH), 1.0);
-
-
-	float4 DiffuseColor = float4(Diffuse_OrenNayar(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
-	//float4 DiffuseColor = float4(Diffuse_Burley(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
-
 	
-	float4 CookTorranceColor = float4(0, 0, 0, 0);
+	
+
+	float4 DiffuseColor = DiffuseShade(g_cubeCB.albedo.xyz, g_cubeCB.roughness, L, V, N);
+	
+	float4 SpecularColor = float4(0, 0, 0, 0);
+
 	/*if (!shadowRayHit) {
 		payload.color += disneyDiColor;
 	}*/
-	CookTorranceColor = float4(Cook_Torrance2(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH, NoH ), 1.0);
+	SpecularColor = SpecularShade(g_cubeCB.albedo.xyz, g_cubeCB.roughness, -L, V, N);
+
 	// Apply visibility falloff.
 	//float t = RayTCurrent();
 	//color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
 
 	//(1- fresnelR)* DiffuseColor + fresnelR * CookTorranceColor + reflectedColor
 	float4 res = float4(0, 0, 0, 0); 
-	res +=  saturate(DiffuseColor)*(1 - fresnelR);//*(1- fresnelR) 
-	res += (CookTorranceColor) *fresnelR;
+	res += saturate(DiffuseColor);// *(1 - fresnelR);//*(1- fresnelR) 
+	//res += saturate(SpecularColor);// *fresnelR;
+	//res += reflectedColor;
 	payload.color = res;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
 

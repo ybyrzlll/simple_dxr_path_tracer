@@ -103,6 +103,9 @@
     <None Include="readme.md" />
     <None Include="packages.config" />
     <None Include="util.hlsli" />
+    <None Include="sampling.hlsli">
+      <Filter>Assets\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Raytracing.hlsl" />

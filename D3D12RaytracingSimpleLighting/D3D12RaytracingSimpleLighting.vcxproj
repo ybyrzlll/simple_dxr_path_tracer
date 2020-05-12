@@ -211,6 +211,7 @@ PrebuildCheck.bat</Command>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="readme.md" />
+    <None Include="sampling.hlsli" />
     <None Include="util.hlsli" />
   </ItemGroup>
   <ItemGroup>
