@@ -13,6 +13,8 @@
 #include "D3D12RaytracingSimpleLighting.h"
 #include "DirectXRaytracingHelper.h"
 #include "CompiledShaders\Raytracing.hlsl.h"
+#include "m_utils.hpp"
+
 
 using namespace DX;
 
@@ -1049,6 +1051,13 @@ void D3D12RaytracingSimpleLighting::OnUpdate()
 	}
 
 	m_sceneCB[frameIndex].frame_num++;
+
+	//time
+	float diff = GetTickCount64() - t_time;
+	t_time = GetTickCount64();
+	float shrub = diff / 1000.0;
+	string a = to_string(shrub);
+	OutputDebugString(DebugTools::stringToLPCWSTR(a+"\n"));
 }
 
 

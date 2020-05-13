@@ -66,6 +66,7 @@ public:
     virtual IDXGISwapChain* GetSwapchain() { return m_deviceResources->GetSwapChain(); }
 
 private:
+	DWORD t_time;
     static const UINT FrameCount = 3;
 	static const UINT ModelCount = 3;
 

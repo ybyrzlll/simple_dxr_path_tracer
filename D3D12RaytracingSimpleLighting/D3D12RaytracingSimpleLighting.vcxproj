@@ -172,6 +172,7 @@ PrebuildCheck.bat</Command>
     <ClInclude Include="RaytracingHlslCompat.h" />
     <ClInclude Include="rtrt.h" />
     <ClInclude Include="StepTimer.h" />
+    <ClInclude Include="m_utils.hpp" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="D3D12RaytracingSimpleLighting.h" />
     <ClInclude Include="d3dx12.h" />

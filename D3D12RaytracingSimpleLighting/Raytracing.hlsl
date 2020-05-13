@@ -142,42 +142,7 @@ float4 CalculateSpecularCoefficient(in float3 hitPosition, in float3 incidentLig
 	return pow(saturate(dot(reflectedLightRay, normalize(-WorldRayDirection()))), specularPower);
 }
 
-
-// Phong lighting model = ambient + diffuse + specular components.
-//float4 CalculatePhongLighting(in float4 albedo, in float3 normal, in bool isInShadow, in float diffuseCoef = 1.0, in float specularCoef = 1.0, in float specularPower = 50)
-//{
-//	float3 hitPosition = HitWorldPosition();
-//	float3 lightPosition = g_sceneCB.lightPosition.xyz;
-//	float shadowFactor = isInShadow ? InShadowRadiance : 1.0;
-//	float3 incidentLightRay = normalize(hitPosition - lightPosition);
-//
-//	// Diffuse component.
-//	float4 lightDiffuseColor = g_sceneCB.lightDiffuseColor;
-//	float Kd = CalculateDiffuseCoefficient(hitPosition, incidentLightRay, normal);
-//	float4 diffuseColor = shadowFactor * diffuseCoef * Kd * lightDiffuseColor * albedo;
-//
-//	// Specular component.
-//	float4 specularColor = float4(0, 0, 0, 0);
-//	if (!isInShadow)
-//	{
-//		float4 lightSpecularColor = float4(1, 1, 1, 1);
-//		float4 Ks = CalculateSpecularCoefficient(hitPosition, incidentLightRay, normal, specularPower);
-//		specularColor = specularCoef * Ks * lightSpecularColor;
-//	}
-//
-//	// Ambient component.
-//	// Fake AO: Darken faces with normal facing downwards/away from the sky a little bit.
-//	float4 ambientColor = g_sceneCB.lightAmbientColor;
-//	float4 ambientColorMin = g_sceneCB.lightAmbientColor - 0.1;
-//	float4 ambientColorMax = g_sceneCB.lightAmbientColor;
-//	float a = 1 - saturate(dot(normal, float3(0, -1, 0)));
-//	ambientColor = albedo * lerp(ambientColorMin, ambientColorMax, a);
-//
-//	return ambientColor + diffuseColor + specularColor;
-//}
-
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
-
 
 // Retrieve attribute at a hit position interpolated from vertex attributes using the hit's barycentrics.
 float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttributes attr)
@@ -405,57 +370,6 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 
 	float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
 	payload.radiance = radiance +sampleColor;
-	//payload.bounceDir = sampleDir;
-
-	//]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
-
-
-	//float3 hitPosition = HitWorldPosition() + hit.normal * 0.05;
-	//float3 Hit2Light = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
-	//Ray shadowRay = { hitPosition,  Hit2Light };
-	//bool shadowRayHit = TraceShadowRayAndReportIfHit(shadowRay, payload.recursionDepth);
-	//float3 L = WorldRayDirection();
-	//float3 V = Hit2Light;
-	//float3 N = hit.normal;
-
-	//float4 fresnelR = float4(F_Schlick2(g_cubeCB.albedo.xyz, V, L), 1.0);
-
-	//// Reflected component.
-	//float4 reflectedColor = float4(0, 0, 0, 0);
-	////if (l_materialCB.reflectanceCoef > 0.001)
-	//{
-	//	//Trace a reflection ray.
-	//	Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), hit.normal) };
-	//	float4 reflectionColor = TraceRadianceRay(reflectionRay, payload.recursionDepth);
-	//	reflectedColor = 0.3 * fresnelR * reflectionColor;
-	//}
-
-	////float4 phongColor = CalculatePhongLighting(g_cubeCB.albedo, hit.normal, shadowRayHit, g_cubeCB.diffuseCoef, g_cubeCB.specularCoef, g_cubeCB.specularPower);
-	//
-	//float4 ambient = float4(0.1, 0.1, 0.1, 1.0);
-	//
-	//
-
-	//float4 DiffuseColor = DiffuseShade(g_cubeCB.albedo.xyz, g_cubeCB.roughness, L, V, N);
-	//
-	//float4 SpecularColor = float4(0, 0, 0, 0);
-
-	///*if (!shadowRayHit) {
-	//	payload.color += disneyDiColor;
-	//}*/
-	//SpecularColor = SpecularShade(g_cubeCB.albedo.xyz, g_cubeCB.roughness, -L, V, N);
-
-	//// Apply visibility falloff.
-	////float t = RayTCurrent();
-	////color = lerp(color, BackgroundColor, 1.0 - exp(-0.000002*t*t*t));
-
-	////(1- fresnelR)* DiffuseColor + fresnelR * CookTorranceColor + reflectedColor
-	//float4 res = float4(0, 0, 0, 0); 
-	////res += saturate(DiffuseColor);// *(1 - fresnelR);//*(1- fresnelR) 
-	////res += saturate(SpecularColor);// *fresnelR;
-	////res += reflectedColor;
-	//res += CalculateDiffuseLighting(HitWorldPosition(), hit.normal);
-	//payload.color = res;// CookTorranceColor;//CalculateDiffuseLighting(HitWorldPosition(), hit.normal); //);//color;
 }
 
 [shader("miss")]
