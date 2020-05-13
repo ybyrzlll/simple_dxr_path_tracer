@@ -328,9 +328,9 @@ void MyRaygenShader()
     // Generate a ray for a camera pixel corresponding to an index from the dispatched 2D grid.
 	[unroll]
 	for (int i = 0; i < Sample_Num; i++) {
-		/*float2 random = float2(nextRand(seed), nextRand(seed));
-		GenerateCameraRay((float2)DispatchRaysIndex().xy + random, origin, rayDir);*/
-		GenerateCameraRay((float2)DispatchRaysIndex().xy , origin, rayDir);
+		float2 random = float2(nextRand(seed), nextRand(seed));
+		GenerateCameraRay((float2)DispatchRaysIndex().xy + random, origin, rayDir);
+		//GenerateCameraRay((float2)DispatchRaysIndex().xy , origin, rayDir);
 		Ray ray;
 		ray.origin = origin;
 		ray.direction = rayDir;
@@ -345,13 +345,17 @@ void MyRaygenShader()
 void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 {
 	ShadingData hit = GetShadingData(attr);
-	if (any(hit.material.emission)) //光源
+
+	/*if (PrimitiveIndex() % 2==0) 
 	{
-		payload.color = hit.material.emission;
+		payload.color = float4(0, 1, 0, 1.0);
 		return;
-	}
-	payload.color = float4(0, 1, 0, 1.0);
+	}*/
+	payload.color = float4(hit.normal, 0);
+	return;
 	//[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
+
+	payload.color = float4(0, 0, 0, 1.0);
 
 	float3 N = hit.normal, fN, E = -WorldRayDirection();
 	//computeNormal(N, fN, attr);
@@ -371,15 +375,16 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	{
 		/*payload.bounceDir = WorldRayDirection();
 		--payload.rayDepth;*/
+		Ray sampleRay = { HitWorldPosition(), WorldRayDirection() };
+		payload.color =  TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
 		return;
 	}
 
-	/*Material mtl = materialBuffer[mtlIdx];
-
-	if (any(mtl.emittance))
+	if (any(hit.material.emission)) //光源
 	{
-		payload.radiance += mtl.emittance;
-	}*/
+		payload.color = hit.material.emission;
+		return;
+	}
 
 	float3 sampleDir, brdfCos;
 	float sampleProb;
@@ -396,7 +401,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	payload.attenuation *= payload.attenuation;
 
 	float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
-	payload.color = color;// +sampleColor;
+	payload.color = color  +sampleColor;
 	//payload.bounceDir = sampleDir;
 
 	//]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]

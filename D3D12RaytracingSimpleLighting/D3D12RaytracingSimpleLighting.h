@@ -176,7 +176,7 @@ private:
     void BuildGeometry();
 	void BuildPlane();
 	void BuildSphere();
-	void BuildCube();
+	void BuildLightModel();
     void BuildAccelerationStructures();
     void BuildShaderTables();
     void SelectRaytracingAPI(RaytracingAPI type);

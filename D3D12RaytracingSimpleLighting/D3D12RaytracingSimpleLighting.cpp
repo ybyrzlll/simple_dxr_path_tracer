@@ -147,7 +147,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 		XMFLOAT4 lightSpecColor;
 		XMFLOAT4 lightDiffuseColor;
 
-		lightPosition = XMFLOAT4(-2.0f, 5.8f, -2.0f, 0.0f);
+		lightPosition = XMFLOAT4(0.0f, 9.8f, 0.0f, 0.0f);
 		m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
 		lightSpecColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -458,8 +458,8 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	m_vertexBuffer.resize(ModelCount);
 
 	//创建作为AC的顶点数据buffer
+	BuildLightModel();
 	BuildPlane();
-	BuildCube();
 	BuildSphere();
 
 	//创建作为shader使用的顶点数据buffer
@@ -590,7 +590,7 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	ThrowIfFalse(descriptorIndexVB == descriptorIndexIB + 1, L"Vertex Buffer descriptor index must follow that of Index Buffer descriptor index!");
 }
 
-void D3D12RaytracingSimpleLighting::BuildCube()
+void D3D12RaytracingSimpleLighting::BuildLightModel()
 {
 	auto device = m_deviceResources->GetD3DDevice();
 
@@ -613,19 +613,19 @@ void D3D12RaytracingSimpleLighting::BuildCube()
 
 	LoadMeshVertex(pszMeshFileName, nVertexCnt, vertices, indices);
 
-	m_indexBuffer[ModelType::Cube].count = m_vertexBuffer[ModelType::Cube].count = nIndexCnt = nVertexCnt;
+	m_indexBuffer[ModelType::Light].count = m_vertexBuffer[ModelType::Light].count = nIndexCnt = nVertexCnt;
 
 	model.vertices.push_back(vertices);
 	model.indices.push_back(indices);
 
 
-	AllocateUploadBuffer(device, indices.data(), nIndexCnt * sizeof(Index), &m_indexBuffer[ModelType::Cube].resource);
-	AllocateUploadBuffer(device, vertices.data(), nVertexCnt * sizeof(Vertex), &m_vertexBuffer[ModelType::Cube].resource);
+	AllocateUploadBuffer(device, indices.data(), nIndexCnt * sizeof(Index), &m_indexBuffer[ModelType::Light].resource);
+	AllocateUploadBuffer(device, vertices.data(), nVertexCnt * sizeof(Vertex), &m_vertexBuffer[ModelType::Light].resource);
 
 	// Vertex buffer is passed to the shader along with index buffer as a descriptor table.
 	// Vertex buffer descriptor must follow index buffer descriptor in the descriptor heap.
-	UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer[ModelType::Cube], (nIndexCnt * sizeof(Index)) / 4, 0);
-	UINT descriptorIndexVB = CreateBufferSRV(&m_vertexBuffer[ModelType::Cube], nVertexCnt, sizeof(vertices[0]));
+	UINT descriptorIndexIB = CreateBufferSRV(&m_indexBuffer[ModelType::Light], (nIndexCnt * sizeof(Index)) / 4, 0);
+	UINT descriptorIndexVB = CreateBufferSRV(&m_vertexBuffer[ModelType::Light], nVertexCnt, sizeof(vertices[0]));
 	ThrowIfFalse(descriptorIndexVB == descriptorIndexIB + 1, L"Vertex Buffer descriptor index must follow that of Index Buffer descriptor index!");
 }
 
@@ -712,7 +712,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 
 
 	//Instance Buffer
-	UINT NumInstance = 5;
+	UINT NumInstance = 3;
 	ComPtr<ID3D12Resource> instanceDescs;
 	{
 		vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instanceDesc;
@@ -723,42 +723,42 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
 		instanceDesc[0].InstanceID = 0;
-		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];
+		instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Light];
 
-		//plane
-		instanceDesc[1].Transform[1][3] = -3;
-		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 3;
+		//plane1
+		instanceDesc[1].Transform[1][3] = -2;
+		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 5;
 		instanceDesc[1].InstanceMask = 1;
 		instanceDesc[1].InstanceID = 1;
 		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
 
-		//plane
-		{
-		XMMATRIX mScale = XMMatrixScaling(3,3,3);
-		XMVECTOR vTranslation = {-7,2,0};
-		XMMATRIX mTranslation = XMMatrixTranslationFromVector(vTranslation);
-		XMMATRIX mRotation = XMMatrixRotationZ(-PI/2);
-		XMMATRIX mTransform = mScale * mRotation * mTranslation;
-		DirectX::XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(&instanceDesc[3].Transform), mTransform);
-		/*instanceDesc[3].Transform[1][3] = -2;
-		instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 3;*/
-		instanceDesc[3].InstanceMask = 1;
-		instanceDesc[3].InstanceID = 1;
-		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
-		}
+		////plane2
+		//{
+		//XMMATRIX mScale = XMMatrixScaling(3,3,3);
+		//XMVECTOR vTranslation = {-7,2,0};
+		//XMMATRIX mTranslation = XMMatrixTranslationFromVector(vTranslation);
+		//XMMATRIX mRotation = XMMatrixRotationZ(-PI/2);
+		//XMMATRIX mTransform = mScale * mRotation * mTranslation;
+		//DirectX::XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(&instanceDesc[3].Transform), mTransform);
+		///*instanceDesc[3].Transform[1][3] = -2;
+		//instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 3;*/
+		//instanceDesc[3].InstanceMask = 1;
+		//instanceDesc[3].InstanceID = 1;
+		//instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
+		//}
 
-		//plane
-		{
-			XMMATRIX mScale = XMMatrixScaling(3, 3, 3);
-			XMVECTOR vTranslation = { 0,2,7 };
-			XMMATRIX mTranslation = XMMatrixTranslationFromVector(vTranslation);
-			XMMATRIX mRotation = XMMatrixRotationX(-PI / 2);
-			XMMATRIX mTransform = mScale * mRotation * mTranslation;
-			DirectX::XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(&instanceDesc[4].Transform), mTransform);
-			instanceDesc[4].InstanceMask = 1;
-			instanceDesc[4].InstanceID = 1;
-			instanceDesc[4].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
-		}
+		////plane3
+		//{
+		//	XMMATRIX mScale = XMMatrixScaling(3, 3, 3);
+		//	XMVECTOR vTranslation = { 0,2,7 };
+		//	XMMATRIX mTranslation = XMMatrixTranslationFromVector(vTranslation);
+		//	XMMATRIX mRotation = XMMatrixRotationX(-PI / 2);
+		//	XMMATRIX mTransform = mScale * mRotation * mTranslation;
+		//	DirectX::XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(&instanceDesc[4].Transform), mTransform);
+		//	instanceDesc[4].InstanceMask = 1;
+		//	instanceDesc[4].InstanceID = 1;
+		//	instanceDesc[4].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
+		//}
 
 		//sphere
 		instanceDesc[2].Transform[1][3] = -2;
@@ -766,17 +766,6 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[2].InstanceMask = 1;
 		instanceDesc[2].InstanceID = 2;
 		instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
-
-		////instanceDesc[3].Transform[0][3] = -3;
-		//instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 1;
-		//instanceDesc[3].InstanceMask = 1;
-
-		//指定实例对应的BLAS
-		/*instanceDesc[0].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
-		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];*/
-
-		/*instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
-		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Cube];*/
 
 
 		UINT64 bufferSize = static_cast<UINT64>(instanceDesc.size() * sizeof(instanceDesc[0]));
