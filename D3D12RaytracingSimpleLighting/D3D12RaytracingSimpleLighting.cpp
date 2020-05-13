@@ -1428,9 +1428,30 @@ void D3D12RaytracingSimpleLighting::LoadMeshVertex(const CHAR * pszMeshFileName,
 			vector<vector<std::string>> m({ splitX , splitY, splitZ});
 			for (int i = 0; i < 3; ++i) {
 				Vertex temp;
-				temp.position = pos[stoi(m[i][0])-1];
-				temp.normal = normal[stoi(m[i][2])-1];
-				temp.texture = texture[stoi(m[i][1])-1];
+				{
+					int p_index = stoi(m[i][0]);
+					if (p_index != 0) {
+						if (p_index < 0) p_index = -p_index;
+						p_index--;
+						temp.position = pos[p_index];
+					}
+				}
+				{
+					int p_index = stoi(m[i][2]);
+					if (p_index != 0) {
+						if (p_index < 0) p_index = -p_index;
+						p_index--;
+						temp.normal = normal[p_index];
+					}
+				}
+				{
+					int p_index = stoi(m[i][1]) ;
+					if (p_index != 0) {
+						if (p_index < 0) p_index = -p_index;
+						p_index--;
+						temp.texture = texture[p_index];
+					}
+				}
 				ppVertex.push_back(temp);
 				ppIndices.push_back(static_cast<Index>(index++));
 			}
