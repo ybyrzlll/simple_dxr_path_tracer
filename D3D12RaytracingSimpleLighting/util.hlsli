@@ -130,6 +130,14 @@ inline float schlick(in float cosine, in float index_of_refraction)
   return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
-
+RayDesc Ray(in float3 origin, in float3 direction, in float tMin, in float tMax)
+{
+	RayDesc ray;
+	ray.Origin = origin;
+	ray.Direction = direction;
+	ray.TMin = tMin;
+	ray.TMax = tMax;
+	return ray;
+}
 
 #endif

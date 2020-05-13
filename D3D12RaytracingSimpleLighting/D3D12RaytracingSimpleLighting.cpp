@@ -219,6 +219,8 @@ void D3D12RaytracingSimpleLighting::CreateDeviceDependentResources()
 	// Create constant buffers for the geometry and the scene.
 	CreateConstantBuffers();
 
+	//ReportLiveObjects();
+
 	// Build shader tables, which define shaders and their local root arguments.
 	BuildShaderTables();
 
@@ -373,9 +375,9 @@ void D3D12RaytracingSimpleLighting::CreateRaytracingPipelineStateObject()
 	/*RayPayload test;
 	XMFLOAT4 a;
 	UINT t1 = sizeof(test.color), t2 = sizeof(test.recursionDepth), t3 = sizeof(a);*/
-	UINT payloadSize = max(sizeof(RayPayload), sizeof(ShadowRayPayload));
+	UINT payloadSize = sizeof(float) * 16;// max(sizeof(RayPayload), sizeof(ShadowRayPayload));
 	// The maximum number of scalars (counted as 4 bytes each) that can be used for attributes in pipelines that contain this shader. The value cannot exceed D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES.
-	UINT attributeSize = 2 * 4;
+	UINT attributeSize = 8;
 	shaderConfig->Config(payloadSize, attributeSize);
 
 	// Local root signature and shader association

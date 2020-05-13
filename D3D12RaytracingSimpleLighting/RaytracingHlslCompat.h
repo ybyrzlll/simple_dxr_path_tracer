@@ -39,8 +39,6 @@ using namespace DirectX;
 
 #define PI 3.1415926535
 
-#define rayTmin = 1e-4f;
-#define rayTmax = 1e27f;
 
 // Shader will use byte encoding to access indices.
 typedef uint32_t Index;
@@ -113,18 +111,6 @@ struct Vertex
 };
 
 
-struct RayPayload
-{
-	UINT   recursionDepth;
-	XMFLOAT3 attenuation;
-	XMFLOAT4 color;
-	UINT seed;
-};
-
-struct ShadowRayPayload
-{
-	bool hit;
-};
 
 struct Ray
 {
