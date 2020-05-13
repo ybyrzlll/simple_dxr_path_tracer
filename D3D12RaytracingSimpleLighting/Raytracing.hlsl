@@ -1,14 +1,3 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
 #ifndef RAYTRACING_HLSL
 #define RAYTRACING_HLSL
 
@@ -172,13 +161,6 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth, in UINT se
 	rayDesc.TMin = 0;
 	rayDesc.TMax = 10000;
 	RayPayload rayPayload = { currentRayRecursionDepth + 1 ,attenuation, float4(0, 0, 0, 0),  seed,  };
-	//TraceRay(Scene,
-	//	RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
-	//	~0, // instance mask
-	//	0, // hitgroup index
-	//	1, // geom multiplier
-	//	0, // miss index
-	//	rayDesc, rayPayload);
 	TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, rayDesc, rayPayload);
 
 	return rayPayload.radiance;
@@ -314,15 +296,6 @@ void MyRaygenShader()
 void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 {
 	ShadingData hit = GetShadingData(attr);
-
-	/*if (PrimitiveIndex() % 2==0) 
-	{
-		payload.color = float4(0, 1, 0, 1.0);
-		return;
-	}*/
-	/*payload.color = float4(hit.normal, 0);
-	return;*/
-	//[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
 
 	payload.radiance = float4(0, 0, 0, 1.0);
 
