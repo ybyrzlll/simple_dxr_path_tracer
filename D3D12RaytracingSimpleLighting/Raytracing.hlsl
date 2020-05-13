@@ -254,6 +254,7 @@ bool TraceShadowRayAndReportIfHit(in Ray ray, in UINT currentRayRecursionDepth)
 	return shadowPayload.hit;
 }
 
+
 //***************************************************************************
 //********************------ Diffuse Shade.. -------*************************
 //***************************************************************************
@@ -323,12 +324,15 @@ void MyRaygenShader()
     
 	float4 color = { 0,0,0,0 };
 
-	uint seed = initRand(g_sceneCB.frame_num, g_sceneCB.frame_num+1, 16);
+	uint2 launchIdx = DispatchRaysIndex().xy;
+	uint2 launchDim = DispatchRaysDimensions().xy;
+	uint bufferOffset = launchDim.x * launchIdx.y + launchIdx.x;
+	uint seed = getNewSeed(bufferOffset, g_sceneCB.frame_num, 8);
 
     // Generate a ray for a camera pixel corresponding to an index from the dispatched 2D grid.
 	[unroll]
 	for (int i = 0; i < Sample_Num; i++) {
-		float2 random = float2(nextRand(seed), nextRand(seed));
+		float2 random = float2(rnd(seed), rnd(seed));
 		GenerateCameraRay((float2)DispatchRaysIndex().xy + random, origin, rayDir);
 		//GenerateCameraRay((float2)DispatchRaysIndex().xy , origin, rayDir);
 		Ray ray;
@@ -351,8 +355,8 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 		payload.color = float4(0, 1, 0, 1.0);
 		return;
 	}*/
-	payload.color = float4(hit.normal, 0);
-	return;
+	/*payload.color = float4(hit.normal, 0);
+	return;*/
 	//[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
 
 	payload.color = float4(0, 0, 0, 1.0);
@@ -375,8 +379,8 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	{
 		/*payload.bounceDir = WorldRayDirection();
 		--payload.rayDepth;*/
-		Ray sampleRay = { HitWorldPosition(), WorldRayDirection() };
-		payload.color =  TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
+		//Ray sampleRay = { HitWorldPosition(), WorldRayDirection() };
+		//payload.color =  TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
 		return;
 	}
 
@@ -400,8 +404,8 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	float color = payload.attenuation * float4(brdfCos / sampleProb, 1);// brdfCos/sampleProb
 	payload.attenuation *= payload.attenuation;
 
-	float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
-	payload.color = color  +sampleColor;
+	//float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
+	payload.color = color;// +sampleColor;
 	//payload.bounceDir = sampleDir;
 
 	//]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]

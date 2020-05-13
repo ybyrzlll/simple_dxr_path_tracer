@@ -491,7 +491,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	materials[0].color_diffuse = { 0,0.0,0,0 };
 	materials[0].color_emissive = { 0,0,0,0 };
 	materials[0].color_specular = { 0,0,0,0 };
-	materials[0].emission = { 1, 1,1,0 };
+	materials[0].emission = { 1, 0, 0,0 };
 	materials[0].metallic = 0.1;
 	materials[0].roughness = 0.1;
 	materials[0].specular = 0.1;
@@ -718,8 +718,9 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instanceDesc;
 		instanceDesc.resize(NumInstance);
 		
-		//cube
-		instanceDesc[0].Transform[1][3] = 5;
+		//Light
+		instanceDesc[0].Transform[0][3] = 0;
+		instanceDesc[0].Transform[1][3] = 8;
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
 		instanceDesc[0].InstanceID = 0;
