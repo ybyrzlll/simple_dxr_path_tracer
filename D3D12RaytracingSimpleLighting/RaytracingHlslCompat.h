@@ -117,7 +117,7 @@ struct RayPayload
 {
 	UINT   recursionDepth;
 	XMFLOAT3 attenuation;
-	XMFLOAT4 color;
+	XMFLOAT4 radiance;
 	UINT seed;
 };
 

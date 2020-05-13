@@ -206,7 +206,7 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth, in UINT se
 	// Note: make sure to enable face culling so as to avoid surface face fighting.
 	rayDesc.TMin = 0;
 	rayDesc.TMax = 10000;
-	RayPayload rayPayload = { float4(0, 0, 0, 0), currentRayRecursionDepth + 1 , seed, attenuation};
+	RayPayload rayPayload = { currentRayRecursionDepth + 1 ,attenuation, float4(0, 0, 0, 0),  seed,  };
 	//TraceRay(Scene,
 	//	RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
 	//	~0, // instance mask
@@ -216,7 +216,7 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth, in UINT se
 	//	rayDesc, rayPayload);
 	TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, rayDesc, rayPayload);
 
-	return rayPayload.color;
+	return rayPayload.radiance;
 }
 
 // Trace a shadow ray and return true if it hits any geometry.
@@ -359,7 +359,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	return;*/
 	//[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
 
-	payload.color = float4(0, 0, 0, 1.0);
+	payload.radiance = float4(0, 0, 0, 1.0);
 
 	float3 N = hit.normal, fN, E = -WorldRayDirection();
 	//computeNormal(N, fN, attr);
@@ -379,15 +379,14 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	{
 		/*payload.bounceDir = WorldRayDirection();
 		--payload.rayDepth;*/
-		//Ray sampleRay = { HitWorldPosition(), WorldRayDirection() };
-		//payload.color =  TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
+		Ray sampleRay = { HitWorldPosition(), WorldRayDirection() };
+		payload.radiance =  TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
 		return;
 	}
 
 	if (any(hit.material.emission)) //π‚‘¥
 	{
-		payload.color = hit.material.emission;
-		return;
+		payload.radiance += hit.material.emission;
 	}
 
 	float3 sampleDir, brdfCos;
@@ -401,11 +400,11 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 		
 	Ray sampleRay = { HitWorldPosition(), sampleDir };
 	payload.attenuation = brdfCos / sampleProb;
-	float color = payload.attenuation * float4(brdfCos / sampleProb, 1);// brdfCos/sampleProb
+	float radiance = payload.attenuation * payload.radiance;// brdfCos/sampleProb
 	payload.attenuation *= payload.attenuation;
 
-	//float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
-	payload.color = color;// +sampleColor;
+	float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
+	payload.radiance = radiance +sampleColor;
 	//payload.bounceDir = sampleDir;
 
 	//]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
@@ -462,7 +461,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 [shader("miss")]
 void MyMissShader(inout RayPayload payload)
 {
-    payload.color = BackgroundColor;
+    payload.radiance = BackgroundColor;
 }
 
 [shader("miss")]
