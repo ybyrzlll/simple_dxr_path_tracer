@@ -493,14 +493,14 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	materials[0].color_diffuse = { 0,0.0,0,0 };
 	materials[0].color_emissive = { 0,0,0,0 };
 	materials[0].color_specular = { 0,0,0,0 };
-	materials[0].emission = { 1, 0, 0,0 };
+	materials[0].emission = { 1, 1, 1,0 };
 	materials[0].metallic = 0.1;
 	materials[0].roughness = 0.1;
 	materials[0].specular = 0.1;
 	meshes[0].material = 0;
 
 	materials[1].color_ambient = { 0,0,0,0 };
-	materials[1].color_diffuse = { 0.6, 0.0,0.0,0 };
+	materials[1].color_diffuse = { 1, 0.0,0.0,0 };
 	materials[1].color_emissive = { 0,0,0,0 };
 	materials[1].color_specular = { 0,0,0,0 };
 	materials[1].emission = { 0,0,0,0 };

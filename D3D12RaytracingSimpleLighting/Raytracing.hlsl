@@ -160,7 +160,7 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth, in UINT se
 	// Note: make sure to enable face culling so as to avoid surface face fighting.
 	rayDesc.TMin = 0;
 	rayDesc.TMax = 10000;
-	RayPayload rayPayload = { currentRayRecursionDepth + 1 ,attenuation, float4(0, 0, 0, 0),  seed,  };
+	RayPayload rayPayload = { currentRayRecursionDepth + 1 ,attenuation, float4(0, 0, 0, 0),  seed};
 	TraceRay(Scene, RAY_FLAG_CULL_BACK_FACING_TRIANGLES, ~0, 0, 1, 0, rayDesc, rayPayload);
 
 	return rayPayload.radiance;
@@ -297,13 +297,9 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 {
 	ShadingData hit = GetShadingData(attr);
 
-	payload.radiance = float4(0, 0, 0, 1.0);
-
 	float3 N = hit.normal, fN, E = -WorldRayDirection();
 	//computeNormal(N, fN, attr);
 	float EN = dot(E, N);// , EfN = dot(E, fN);
-
-	payload.attenuation = 1.0f;
 
 
 	/*if (obj.twoSided && EfN < 0)
@@ -317,14 +313,15 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	{
 		/*payload.bounceDir = WorldRayDirection();
 		--payload.rayDepth;*/
-		Ray sampleRay = { HitWorldPosition(), WorldRayDirection() };
-		payload.radiance =  TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
+		/*Ray sampleRay = { HitWorldPosition(), WorldRayDirection() };
+		payload.radiance =  TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);*/
 		return;
 	}
 
 	if (any(hit.material.emission)) //¹âÔ´
 	{
-		payload.radiance += hit.material.emission;
+		payload.radiance = hit.material.emission;
+		return;
 	}
 
 	float3 sampleDir, brdfCos;
