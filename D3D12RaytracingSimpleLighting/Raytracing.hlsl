@@ -35,32 +35,33 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float3 brdfCos
 		brdfEval = InvPi * albedo;
 	}*/
 
-	//else if (reflectType == Metal)
-	//{
-	//	H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
-	//	HN = H.z;
-	//	H = applyRotationMappingZToN(N, H);
-	//	OH = dot(O, H);
+	//Metal
+	if (mtl.metallic >0.8)
+	{
+		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
+		HN = H.z;
+		H = applyRotationMappingZToN(N, H);
+		OH = dot(O, H);
 
-	//	I = 2 * OH * H - O;
-	//	IN = dot(I, N);
+		I = 2 * OH * H - O;
+		IN = dot(I, N);
 
-	//	if (IN < 0)
-	//	{
-	//		brdfEval = 0;
-	//		sampleProb = 0;		// sampleProb = D*HN / (4*abs(OH));  if allowing sample negative hemisphere
-	//	}
-	//	else
-	//	{
-	//		float D = TrowbridgeReitz(HN*HN, alpha2);
-	//		float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
-	//		float3 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
-	//		brdfEval = ((D * G) / (4 * IN * ON)) * F;
-	//		sampleProb = D * HN / (4 * OH);		// IN > 0 imply OH > 0
-	//	}
-	//}
-
-	//else if (reflectType == Plastic)
+		if (IN < 0)
+		{
+			brdfEval = 0;
+			sampleProb = 0;		// sampleProb = D*HN / (4*abs(OH));  if allowing sample negative hemisphere
+		}
+		else
+		{
+			float D = TrowbridgeReitz(HN*HN, alpha2);
+			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
+			float3 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
+			brdfEval = ((D * G) / (4 * IN * ON)) * F;
+			sampleProb = D * HN / (4 * OH);		// IN > 0 imply OH > 0
+		}
+	}
+	//Plastic
+	else if (mtl.metallic < 0.8)
 	{
 		/*float metallic;
 		float specular;*/
@@ -320,8 +321,8 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 
 	if (any(hit.material.emission)) //¹âÔ´
 	{
-		payload.radiance = hit.material.emission;
-		return;
+		payload.radiance += hit.material.emission;
+		//return;
 	}
 
 	float3 sampleDir, brdfCos;

@@ -163,6 +163,6 @@ namespace TraceRayParameters
 }
 
 static const float InShadowRadiance = 0.35f;
-static const XMFLOAT4 BackgroundColor = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+static const XMFLOAT4 BackgroundColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 
 #endif // RAYTRACINGHLSLCOMPAT_H
