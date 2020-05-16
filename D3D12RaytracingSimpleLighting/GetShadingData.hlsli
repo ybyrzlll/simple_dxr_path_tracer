@@ -2,6 +2,7 @@ StructuredBuffer<Mesh> scene_meshes : register(t1);//HLSL_REGISTER_MESHES
 StructuredBuffer<Vertex> Vertices : register(t2);//HLSL_REGISTER_VERTICES
 StructuredBuffer<uint> Indices : register(t3); //HLSL_REGISTER_INDICES
 StructuredBuffer<Material> scene_materials : register(t4);//HLSL_REGISTER_MATERIALS
+StructuredBuffer<Instance> map_instance : register(t5);//HLSL_REGISTER_MAP_INSTANCE_MT
 ConstantBuffer<MaterialConstantBuffer> g_cubeCB : register(b1);
 
 //********************************************************************************
@@ -27,7 +28,7 @@ struct Triangle
 uint3 GetIndices()
 {
 	int prim_idx = PrimitiveIndex();
-	int mesh_idx = InstanceID();
+	int mesh_idx = map_instance[InstanceID()].index_Mesh;
 
 	return uint3(
 		scene_meshes[mesh_idx].first_idx_vertices + Indices[scene_meshes[mesh_idx].first_idx_indices + (prim_idx * 3) + 0],
@@ -95,7 +96,7 @@ inline ShadingData GetShadingData(TriangleAttributes attr)
 	data.emissive = material.emissive_map != MATERIAL_NO_TEXTURE_INDEX ? SampleTexture(scene_sampler, scene_textures[material.emissive_map], vertex.uv).xyz : material.color_emissive.xyz;
 	data.index_of_refraction = material.index_of_refraction;
 	data.glossiness = material.glossiness;*/
-	data.material = scene_materials[scene_meshes[InstanceID()].material];//
+	data.material = scene_materials[map_instance[InstanceID()].index_MT];//
 
 	return data;
 }

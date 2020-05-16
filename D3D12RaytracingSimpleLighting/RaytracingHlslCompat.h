@@ -29,6 +29,9 @@ using namespace DirectX;
 #define CPP_REGISTER_MATERIALS 4
 #define HLSL_REGISTER_MATERIALS t4
 
+#define CPP_REGISTER_MAP_INSTANCE_MT 5
+#define HLSL_REGISTER_MAP_INSTANCE_MT t5
+
 #endif
 
 // PERFORMANCE TIP: Set max recursion depth as low as needed
@@ -103,6 +106,12 @@ struct Material
 	float metallic;
 	float specular;
 	XMFLOAT4  emission;
+};
+
+struct Instance 
+{
+	UINT index_MT;
+	UINT index_Mesh;
 };
 
 struct Vertex

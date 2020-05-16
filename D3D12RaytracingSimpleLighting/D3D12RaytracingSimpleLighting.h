@@ -24,6 +24,7 @@ namespace GlobalRootSignatureParams {
 		Vertices,
 		Indices,
 		Materials,
+		Map_instance_mt,
         Count 
     };
 }
@@ -69,6 +70,7 @@ private:
 	DWORD t_time;
     static const UINT FrameCount = 3;
 	static const UINT ModelCount = 3;
+	static const UINT NumInstance = 7;
 
     // We'll allocate space for several of these and they will need to be padded for alignment.
     static_assert(sizeof(SceneConstantBuffer) < D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, "Checking the size here.");
@@ -121,11 +123,13 @@ private:
 	rtrt::Model model;
 
 	std::vector<Mesh> meshes;
+	std::vector<Instance> instance_map;//每个instance指定 mesh material
 
 	rtrt::Buffer* meshes_buffer = nullptr;
 	rtrt::Buffer* all_vertices_buffer = nullptr;
 	rtrt::Buffer* all_indices_buffer = nullptr;
 	rtrt::Buffer* materials_buffer = nullptr;
+	rtrt::Buffer* instance_map_buffer = nullptr;
 
     // Acceleration structure
 	rtrt::AccelerationStructure m_bottomLevelAccelerationStructure;

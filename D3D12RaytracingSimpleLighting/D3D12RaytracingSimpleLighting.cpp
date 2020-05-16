@@ -265,6 +265,8 @@ void D3D12RaytracingSimpleLighting::CreateRootSignatures()
 		rootParameters[GlobalRootSignatureParams::Vertices].InitAsShaderResourceView(CPP_REGISTER_VERTICES);
 		rootParameters[GlobalRootSignatureParams::Indices].InitAsShaderResourceView(CPP_REGISTER_INDICES);
 		rootParameters[GlobalRootSignatureParams::Materials].InitAsShaderResourceView(CPP_REGISTER_MATERIALS);
+		rootParameters[GlobalRootSignatureParams::Map_instance_mt].InitAsShaderResourceView(CPP_REGISTER_MAP_INSTANCE_MT);
+
 
 		CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
 		SerializeAndCreateRaytracingRootSignature(globalRootSignatureDesc, &m_raytracingGlobalRootSignature);
@@ -472,6 +474,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	all_vertices_buffer = new rtrt::Buffer();
 	all_indices_buffer = new rtrt::Buffer();
 	materials_buffer = new rtrt::Buffer();
+	instance_map_buffer = new rtrt::Buffer();
 
 	meshes.resize(ModelCount);
 	std::vector<Vertex> all_vertices;
@@ -487,6 +490,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		all_indices.insert(all_indices.end(), model.indices[i].begin(), model.indices[i].end());
 	}
 
+	instance_map.resize(NumInstance);
 	std::vector<Material> materials;
 	materials.resize(ModelCount);
 	materials[0].color_ambient = { 0,0,0,0 };
@@ -497,7 +501,6 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	materials[0].metallic = 0.1;
 	materials[0].roughness = 0.1;
 	materials[0].specular = 0.1;
-	meshes[0].material = 0;
 
 	materials[1].color_ambient = { 0,0,0,0 };
 	materials[1].color_diffuse = { 1, 0, 0.0,0 };
@@ -507,10 +510,37 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	materials[1].metallic = 0.0;
 	materials[1].roughness = 0.5;
 	materials[1].specular = 0.2;
-	meshes[1].material = 1;
-	meshes[2].material = 1;
 
 
+	materials[2].color_ambient = { 0,0,0,0 };
+	materials[2].color_diffuse = { 1, 0, 0.0,0 };
+	materials[2].color_emissive = { 0,0,0,0 };
+	materials[2].color_specular = { 0,0,0,0 };
+	materials[2].emission = { 0,0,0,0 };
+	materials[2].metallic = 1.0;
+	materials[2].roughness = 0.5;
+	materials[2].specular = 0.2;
+
+	//Instance ≈‰÷√mesh material
+	{
+		instance_map[0].index_MT = 0;
+		instance_map[0].index_Mesh = 0;
+		instance_map[1].index_MT = 1;
+		instance_map[1].index_Mesh = 1;
+		instance_map[2].index_MT = 1;
+		instance_map[2].index_Mesh = 2;
+		instance_map[3].index_MT = 2;
+		instance_map[3].index_Mesh = 2;
+		instance_map[4].index_MT = 2;
+		instance_map[4].index_Mesh = 2;
+		instance_map[5].index_MT = 2;
+		instance_map[5].index_Mesh = 2;
+		instance_map[6].index_MT = 2;
+		instance_map[6].index_Mesh = 2;
+	}
+	
+
+	AllocateUploadBuffer(device, instance_map.data(), static_cast<UINT>(NumInstance * sizeof(Instance)), &instance_map_buffer->buffer_);
 	AllocateUploadBuffer(device, materials.data(), static_cast<UINT>(materials.size() * sizeof(Material)), &materials_buffer->buffer_);
 	AllocateUploadBuffer(device, meshes.data(), static_cast<UINT>(meshes.size() * sizeof(Mesh)), &meshes_buffer->buffer_);
 	AllocateUploadBuffer(device, all_vertices.data(), static_cast<UINT>(all_vertices.size() * sizeof(Vertex)), &all_vertices_buffer->buffer_);
@@ -715,7 +745,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 
 
 	//Instance Buffer
-	UINT NumInstance = 7;
+	
 	ComPtr<ID3D12Resource> instanceDescs;
 	{
 		vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instanceDesc;
@@ -779,7 +809,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[3].Transform[2][3] = -1;
 		instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 0.5;
 		instanceDesc[3].InstanceMask = 1;
-		instanceDesc[3].InstanceID = 2;
+		instanceDesc[3].InstanceID = 3;
 		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 		//sphere
 		instanceDesc[4].Transform[1][3] = -2;
@@ -787,7 +817,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[4].Transform[2][3] = 1;
 		instanceDesc[4].Transform[0][0] = instanceDesc[4].Transform[1][1] = instanceDesc[4].Transform[2][2] = instanceDesc[4].Transform[3][3] = 0.5;
 		instanceDesc[4].InstanceMask = 1;
-		instanceDesc[4].InstanceID = 2;
+		instanceDesc[4].InstanceID = 4;
 		instanceDesc[4].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 		//sphere
 		instanceDesc[5].Transform[1][3] = -2;
@@ -795,7 +825,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[5].Transform[2][3] = -1;
 		instanceDesc[5].Transform[0][0] = instanceDesc[5].Transform[1][1] = instanceDesc[5].Transform[2][2] = instanceDesc[5].Transform[3][3] = 0.5;
 		instanceDesc[5].InstanceMask = 1;
-		instanceDesc[5].InstanceID = 2;
+		instanceDesc[5].InstanceID = 5;
 		instanceDesc[5].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
 		instanceDesc[6].Transform[1][3] = -2;
@@ -803,7 +833,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		instanceDesc[6].Transform[2][3] = 1;
 		instanceDesc[6].Transform[0][0] = instanceDesc[6].Transform[1][1] = instanceDesc[6].Transform[2][2] = instanceDesc[6].Transform[3][3] = 0.5;
 		instanceDesc[6].InstanceMask = 1;
-		instanceDesc[6].InstanceID = 2;
+		instanceDesc[6].InstanceID = 6;
 		instanceDesc[6].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
 
@@ -1147,6 +1177,7 @@ void D3D12RaytracingSimpleLighting::DoRaytracing()
 		commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::Vertices, all_vertices_buffer->GetBuffer()->GetGPUVirtualAddress());
 		commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::Indices, all_indices_buffer->GetBuffer()->GetGPUVirtualAddress());
 		commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::Materials, materials_buffer->GetBuffer()->GetGPUVirtualAddress());
+		commandList->SetComputeRootShaderResourceView(GlobalRootSignatureParams::Map_instance_mt, instance_map_buffer->GetBuffer()->GetGPUVirtualAddress());
 		commandList->SetComputeRootDescriptorTable(GlobalRootSignatureParams::OutputViewSlot, m_raytracingOutputResourceUAVGpuDescriptor);
 	};
 
