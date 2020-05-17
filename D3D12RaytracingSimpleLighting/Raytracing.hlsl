@@ -13,12 +13,12 @@ RWTexture2D<float4> RenderTarget : register(u0);
 
 ConstantBuffer<SceneConstantBuffer> g_sceneCB : register(b0);
 
-void samplingBRDF(out float3 sampleDir, out float sampleProb, out float3 brdfCos,
+void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos,
 	in float3 surfaceNormal, in float3 baseDir, in Material mtl, inout uint seed)
 {
 
-	float3 brdfEval;
-	float3 albedo = mtl.color_diffuse;
+	float4 brdfEval;
+	float4 albedo = mtl.color_diffuse;
 	//uint reflectType = mtl.type;
 
 	float3 I, O = baseDir, N = surfaceNormal, H;
@@ -55,7 +55,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float3 brdfCos
 		{
 			float D = TrowbridgeReitz(HN*HN, alpha2);
 			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
-			float3 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
+			float4 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
 			brdfEval = ((D * G) / (4 * IN * ON)) * F;
 			sampleProb = D * HN / (4 * OH);		// IN > 0 imply OH > 0
 		}
@@ -99,7 +99,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float3 brdfCos
 			float D = TrowbridgeReitz(HN*HN, alpha2);
 			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
 			float3 spec = ((D * G) / (4 * IN * ON));
-			brdfEval = r * spec + (1 - r) * InvPi * albedo;
+			brdfEval = (r * float4(spec,1) + (1 - r) * InvPi * albedo, 1);
 			sampleProb = r * (D*HN / (4 * OH)) + (1 - r) * (InvPi * IN);
 		}
 	}
@@ -146,7 +146,7 @@ float3 HitAttribute(float3 vertexAttribute[3], BuiltInTriangleIntersectionAttrib
 //*****------ TraceRay wrappers for radiance and shadow rays. -------********
 //***************************************************************************
 // Trace a radiance ray into the scene and returns a shaded color.
-float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth, in UINT seed, in float3 attenuation)
+float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth, in UINT seed, in float4 attenuation)
 {
 	if (currentRayRecursionDepth >= MAX_RAY_RECURSION_DEPTH)//MAX_RAY_RECURSION_DEPTH
 	{
@@ -203,34 +203,7 @@ bool TraceShadowRayAndReportIfHit(in Ray ray, in UINT currentRayRecursionDepth)
 }
 
 
-//***************************************************************************
-//********************------ Diffuse Shade.. -------*************************
-//***************************************************************************
 
-float4 DiffuseShade(in float3 DiffuseColor, in float Roughness, in float3 L, in float3 V, in float3 N) {
-	float NoL = saturate(dot(N, L));
-	float NoV = saturate(dot(N, V));
-	float VoL = saturate(dot(V, L));
-	float InvLenH = rsqrt(2 + 2 * VoL);
-	float NoH = saturate((NoL + NoV) * InvLenH);
-	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
-	return float4(Diffuse_OrenNayar(DiffuseColor, Roughness, NoV, NoL, VoH), 1.0);
-	//return float4(Diffuse_Burley(DiffuseColor, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
-}
-
-//***************************************************************************
-//********************------ Specular Shade.. -------*************************
-//***************************************************************************
-
-float4 SpecularShade(in float3 SpecColor, in float Roughness, in float3 L, in float3 V, in float3 N) {
-	float NoL = dot(N, L);
-	float NoV = dot(N, V);
-	float VoL = dot(V, L);
-	float InvLenH = rsqrt(2 + 2 * VoL);
-	float NoH = saturate((NoL + NoV) * InvLenH);
-	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
-	return float4(Cook_Torrance2(g_cubeCB.albedo.xyz, g_cubeCB.roughness, NoV, NoL, VoH, NoH), 1.0);
-}
 
 //***************************************************************************
 //********************------ Ray gen shader.. -------************************
@@ -254,14 +227,14 @@ inline void GenerateCameraRay(float2 index, out float3 origin, out float3 direct
 }
 
 // Diffuse lighting calculation.
-float4 CalculateDiffuseLighting(float3 hitPosition, float3 normal)
+float4 CalculateDiffuseLighting(float3 hitPosition, float3 normal, float4 albedo)
 {
     float3 pixelToLight = normalize(g_sceneCB.lightPosition.xyz - hitPosition);
 
     // Diffuse contribution.
     float fNDotL = max(0.0f, dot(pixelToLight, normal));
 
-    return g_cubeCB.albedo * g_sceneCB.lightDiffuseColor * fNDotL;
+    return albedo * g_sceneCB.lightDiffuseColor * fNDotL;
 }
 
 [shader("raygeneration")]
@@ -325,7 +298,8 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 		//return;
 	}
 
-	float3 sampleDir, brdfCos;
+	float3 sampleDir;
+	float4 brdfCos;
 	float sampleProb;
 	samplingBRDF(sampleDir, sampleProb, brdfCos, N, E, hit.material, payload.seed);
 
@@ -336,7 +310,7 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 		
 	Ray sampleRay = { HitWorldPosition(), sampleDir };
 	payload.attenuation = brdfCos / sampleProb;
-	float radiance = payload.attenuation * payload.radiance;// brdfCos/sampleProb
+	float4 radiance = payload.attenuation * payload.radiance;// brdfCos/sampleProb
 	payload.attenuation *= payload.attenuation;
 
 	float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);

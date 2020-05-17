@@ -513,13 +513,13 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 
 
 	materials[2].color_ambient = { 0,0,0,0 };
-	materials[2].color_diffuse = { 1, 0, 0.0,0 };
+	materials[2].color_diffuse = { 0, 0, 1.0,0 };
 	materials[2].color_emissive = { 0,0,0,0 };
 	materials[2].color_specular = { 0,0,0,0 };
 	materials[2].emission = { 0,0,0,0 };
 	materials[2].metallic = 1.0;
 	materials[2].roughness = 0.5;
-	materials[2].specular = 0.2;
+	materials[2].specular = 0.7;
 
 	//Instance ≈‰÷√mesh material
 	{
@@ -753,7 +753,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		
 		//Light
 		instanceDesc[0].Transform[0][3] = 0;
-		instanceDesc[0].Transform[1][3] = 8;
+		instanceDesc[0].Transform[1][3] = 5;
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
 		instanceDesc[0].InstanceID = 0;

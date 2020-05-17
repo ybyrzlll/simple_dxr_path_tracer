@@ -121,3 +121,32 @@ float3 Cook_Torrance2(in float3 SpecularColor, in float Roughness, in float NoV,
 	float3 temp = F_Schlick(SpecularColor, VoH) * saturate(Gue4(NoV, NoL, Roughness)) * DGGX(NoH, Roughness);//* DGGX(NoH, Roughness)
 	return temp / (PI * NoL * NoV);
 }
+
+//***************************************************************************
+//********************------ Diffuse Shade.. -------*************************
+//***************************************************************************
+
+float4 DiffuseShade(in float3 DiffuseColor, in float Roughness, in float3 L, in float3 V, in float3 N) {
+	float NoL = saturate(dot(N, L));
+	float NoV = saturate(dot(N, V));
+	float VoL = saturate(dot(V, L));
+	float InvLenH = rsqrt(2 + 2 * VoL);
+	float NoH = saturate((NoL + NoV) * InvLenH);
+	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
+	return float4(Diffuse_OrenNayar(DiffuseColor, Roughness, NoV, NoL, VoH), 1.0);
+	//return float4(Diffuse_Burley(DiffuseColor, g_cubeCB.roughness, NoV, NoL, VoH), 1.0);
+}
+
+//***************************************************************************
+//********************------ Specular Shade.. -------*************************
+//***************************************************************************
+
+float4 SpecularShade(in float3 SpecColor, in float Roughness, in float3 L, in float3 V, in float3 N) {
+	float NoL = dot(N, L);
+	float NoV = dot(N, V);
+	float VoL = dot(V, L);
+	float InvLenH = rsqrt(2 + 2 * VoL);
+	float NoH = saturate((NoL + NoV) * InvLenH);
+	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
+	return float4(Cook_Torrance2(SpecColor, Roughness, NoV, NoL, VoH, NoH), 1.0);
+}

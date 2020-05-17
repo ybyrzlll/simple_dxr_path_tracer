@@ -125,7 +125,7 @@ struct Vertex
 struct RayPayload
 {
 	UINT   recursionDepth;
-	XMFLOAT3 attenuation;
+	XMFLOAT4 attenuation;
 	XMFLOAT4 radiance;
 	UINT seed;
 };

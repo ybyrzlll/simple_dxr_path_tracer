@@ -3,7 +3,7 @@ StructuredBuffer<Vertex> Vertices : register(t2);//HLSL_REGISTER_VERTICES
 StructuredBuffer<uint> Indices : register(t3); //HLSL_REGISTER_INDICES
 StructuredBuffer<Material> scene_materials : register(t4);//HLSL_REGISTER_MATERIALS
 StructuredBuffer<Instance> map_instance : register(t5);//HLSL_REGISTER_MAP_INSTANCE_MT
-ConstantBuffer<MaterialConstantBuffer> g_cubeCB : register(b1);
+//ConstantBuffer<MaterialConstantBuffer> g_cubeCB : register(b1);
 
 //********************************************************************************
 //******************************** GetShadingData ********************************
