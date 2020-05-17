@@ -1,5 +1,5 @@
 # Path Tracing
-!(ScreenShot1.png)
+![(ScreenShot1.png)]
 
 ## Features
 
