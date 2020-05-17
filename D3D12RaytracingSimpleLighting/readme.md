@@ -1,5 +1,5 @@
 # Path Tracing
-![D3D12 Raytracing Simple Lighting GUI](ScreenShot1.png)
+!(ScreenShot1.png)
 
 ## Features
 
