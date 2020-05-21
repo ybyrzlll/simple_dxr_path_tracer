@@ -12,4 +12,6 @@ namespace DebugTools
 
 		return wcstring;
 	}
+
 }
+

@@ -70,7 +70,8 @@ private:
 	DWORD t_time;
     static const UINT FrameCount = 3;
 	static const UINT ModelCount = 3;
-	static const UINT NumInstance = 7;
+	static const UINT MaterialsCount = 7;
+	static const UINT NumInstance = 3;
 
     // We'll allocate space for several of these and they will need to be padded for alignment.
     static_assert(sizeof(SceneConstantBuffer) < D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, "Checking the size here.");

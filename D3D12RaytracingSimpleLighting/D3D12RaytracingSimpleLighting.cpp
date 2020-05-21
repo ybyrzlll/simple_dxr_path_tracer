@@ -490,38 +490,46 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		all_indices.insert(all_indices.end(), model.indices[i].begin(), model.indices[i].end());
 	}
 
-	instance_map.resize(NumInstance);
 	std::vector<Material> materials;
-	materials.resize(ModelCount);
-	materials[0].color_ambient = { 0,0,0,0 };
-	materials[0].color_diffuse = { 0,0.0,0,0 };
-	materials[0].color_emissive = { 0,0,0,0 };
-	materials[0].color_specular = { 0,0,0,0 };
-	materials[0].emission = { 1, 0, 0,0 };
-	materials[0].metallic = 0.1;
-	materials[0].roughness = 0.1;
-	materials[0].specular = 0.1;
-
-	materials[1].color_ambient = { 0,0,0,0 };
-	materials[1].color_diffuse = { 1, 0, 0.0,0 };
-	materials[1].color_emissive = { 0,0,0,0 };
-	materials[1].color_specular = { 0,0,0,0 };
-	materials[1].emission = { 0,0,0,0 };
-	materials[1].metallic = 0.0;
-	materials[1].roughness = 0.5;
-	materials[1].specular = 0.2;
-
-
-	materials[2].color_ambient = { 0,0,0,0 };
-	materials[2].color_diffuse = { 0, 0, 1.0,0 };
-	materials[2].color_emissive = { 0,0,0,0 };
-	materials[2].color_specular = { 0,0,0,0 };
-	materials[2].emission = { 0,0,0,0 };
-	materials[2].metallic = 1.0;
-	materials[2].roughness = 0.5;
-	materials[2].specular = 0.7;
+	materials.resize(MaterialsCount);
+	auto SetAttributes = [&](
+		UINT primitiveIndex,
+		const XMFLOAT4& color_ambient,
+		const XMFLOAT4& color_diffuse,
+		const XMFLOAT4& color_emissive,
+		const XMFLOAT4& color_specular,
+		const XMFLOAT4& emission,
+		const float &metallic ,
+		const float &roughness,
+		const float &specular)
+	{
+		auto& attributes = materials[primitiveIndex];
+		attributes.color_ambient = color_ambient;
+		attributes.color_diffuse = color_diffuse;
+		attributes.color_emissive = color_emissive;
+		attributes.color_specular = color_specular;
+		attributes.emission = emission;
+		attributes.metallic = metallic;
+		attributes.roughness = roughness;
+		attributes.specular = specular;
+	};
+	SetAttributes(0, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0),
+		0.1, 0.1, 0.1);//light source
+	SetAttributes(1, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 1, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.1, 0.1, 0.1);//plane
+	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.0f, 0.1, 0.5);
+	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.5f, 0.3, 0.5);
+	SetAttributes(4, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		1.0f, 0.5, 0.5);
+	SetAttributes(5, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		1.0f, 0.7, 0.5);
+	SetAttributes(6, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		1.0f, 0.9, 0.5);
 
 	//Instance ≈‰÷√mesh material
+	instance_map.resize(NumInstance);
 	{
 		instance_map[0].index_MT = 0;
 		instance_map[0].index_Mesh = 0;
@@ -529,14 +537,14 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		instance_map[1].index_Mesh = 1;
 		instance_map[2].index_MT = 1;
 		instance_map[2].index_Mesh = 2;
-		instance_map[3].index_MT = 2;
-		instance_map[3].index_Mesh = 2;
-		instance_map[4].index_MT = 2;
-		instance_map[4].index_Mesh = 2;
-		instance_map[5].index_MT = 2;
-		instance_map[5].index_Mesh = 2;
-		instance_map[6].index_MT = 2;
-		instance_map[6].index_Mesh = 2;
+		/*instance_map[3].index_MT = 3;
+		instance_map[3].index_Mesh = 3;
+		instance_map[4].index_MT = 4;
+		instance_map[4].index_Mesh = 4;
+		instance_map[5].index_MT = 5;
+		instance_map[5].index_Mesh = 5;
+		instance_map[6].index_MT = 6;
+		instance_map[6].index_Mesh = 6;*/
 	}
 	
 
@@ -601,7 +609,7 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\sphere32.obj", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\helmet.obj", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices;
@@ -761,7 +769,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 
 		//plane1
 		instanceDesc[1].Transform[1][3] = -2;
-		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 5;
+		instanceDesc[1].Transform[0][0] = instanceDesc[1].Transform[1][1] = instanceDesc[1].Transform[2][2] = instanceDesc[1].Transform[3][3] = 6;
 		instanceDesc[1].InstanceMask = 1;
 		instanceDesc[1].InstanceID = 1;
 		instanceDesc[1].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Plane];
@@ -795,46 +803,46 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		//}
 
 		//sphere
-		instanceDesc[2].Transform[1][3] = -0.7;
+		instanceDesc[2].Transform[1][3] = -2;
 		instanceDesc[2].Transform[0][3] = 0;
-		instanceDesc[2].Transform[2][3] = 0;
+		instanceDesc[2].Transform[2][3] = 0;// -5;
 		instanceDesc[2].Transform[0][0] = instanceDesc[2].Transform[1][1] = instanceDesc[2].Transform[2][2] = instanceDesc[2].Transform[3][3] = 0.5;
 		instanceDesc[2].InstanceMask = 1;
 		instanceDesc[2].InstanceID = 2;
 		instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
 		//sphere
-		instanceDesc[3].Transform[1][3] = -2;
-		instanceDesc[3].Transform[0][3] = 1;
-		instanceDesc[3].Transform[2][3] = -1;
-		instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 0.5;
-		instanceDesc[3].InstanceMask = 1;
-		instanceDesc[3].InstanceID = 3;
-		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
-		//sphere
-		instanceDesc[4].Transform[1][3] = -2;
-		instanceDesc[4].Transform[0][3] = -1;
-		instanceDesc[4].Transform[2][3] = 1;
-		instanceDesc[4].Transform[0][0] = instanceDesc[4].Transform[1][1] = instanceDesc[4].Transform[2][2] = instanceDesc[4].Transform[3][3] = 0.5;
-		instanceDesc[4].InstanceMask = 1;
-		instanceDesc[4].InstanceID = 4;
-		instanceDesc[4].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
-		//sphere
-		instanceDesc[5].Transform[1][3] = -2;
-		instanceDesc[5].Transform[0][3] = -1;
-		instanceDesc[5].Transform[2][3] = -1;
-		instanceDesc[5].Transform[0][0] = instanceDesc[5].Transform[1][1] = instanceDesc[5].Transform[2][2] = instanceDesc[5].Transform[3][3] = 0.5;
-		instanceDesc[5].InstanceMask = 1;
-		instanceDesc[5].InstanceID = 5;
-		instanceDesc[5].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		//instanceDesc[3].Transform[1][3] = -2;
+		//instanceDesc[3].Transform[0][3] = 0;
+		//instanceDesc[3].Transform[2][3] = -3;
+		//instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 0.5;
+		//instanceDesc[3].InstanceMask = 1;
+		//instanceDesc[3].InstanceID = 3;
+		//instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		////sphere
+		//instanceDesc[4].Transform[1][3] = -2;
+		//instanceDesc[4].Transform[0][3] = 0;
+		//instanceDesc[4].Transform[2][3] = -1;
+		//instanceDesc[4].Transform[0][0] = instanceDesc[4].Transform[1][1] = instanceDesc[4].Transform[2][2] = instanceDesc[4].Transform[3][3] = 0.5;
+		//instanceDesc[4].InstanceMask = 1;
+		//instanceDesc[4].InstanceID = 4;
+		//instanceDesc[4].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		////sphere
+		//instanceDesc[5].Transform[1][3] = -2;
+		//instanceDesc[5].Transform[0][3] = 0;
+		//instanceDesc[5].Transform[2][3] = 1;
+		//instanceDesc[5].Transform[0][0] = instanceDesc[5].Transform[1][1] = instanceDesc[5].Transform[2][2] = instanceDesc[5].Transform[3][3] = 0.5;
+		//instanceDesc[5].InstanceMask = 1;
+		//instanceDesc[5].InstanceID = 5;
+		//instanceDesc[5].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
-		instanceDesc[6].Transform[1][3] = -2;
-		instanceDesc[6].Transform[0][3] = 1;
-		instanceDesc[6].Transform[2][3] = 1;
-		instanceDesc[6].Transform[0][0] = instanceDesc[6].Transform[1][1] = instanceDesc[6].Transform[2][2] = instanceDesc[6].Transform[3][3] = 0.5;
-		instanceDesc[6].InstanceMask = 1;
-		instanceDesc[6].InstanceID = 6;
-		instanceDesc[6].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		//instanceDesc[6].Transform[1][3] = -2;
+		//instanceDesc[6].Transform[0][3] = 0;
+		//instanceDesc[6].Transform[2][3] = 3;
+		//instanceDesc[6].Transform[0][0] = instanceDesc[6].Transform[1][1] = instanceDesc[6].Transform[2][2] = instanceDesc[6].Transform[3][3] = 0.5;
+		//instanceDesc[6].InstanceMask = 1;
+		//instanceDesc[6].InstanceID = 6;
+		//instanceDesc[6].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
 
 		UINT64 bufferSize = static_cast<UINT64>(instanceDesc.size() * sizeof(instanceDesc[0]));
