@@ -55,7 +55,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 		{
 			/*float D = Dgtr(mtl.color_specular, HN*HN, alpha2);
 			float G = Gue4(IN, dot(O, N), alpha2);*/
-			float D = TrowbridgeReitz(HN*HN, alpha2);
+			float D = TrowbridgeReitzGGX(HN*HN, alpha2);
 			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
 			float4 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
 			brdfEval = ((D * G) / (4 * IN * ON)) * F;
@@ -98,7 +98,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 		}
 		else
 		{
-			float D = TrowbridgeReitz(HN*HN, alpha2);
+			float D = TrowbridgeReitzGGX(HN*HN, alpha2);
 			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
 			float3 spec = ((D * G) / (4 * IN * ON));
 			brdfEval = (r * float4(spec,1) + (1 - r) * InvPi * albedo, 1);

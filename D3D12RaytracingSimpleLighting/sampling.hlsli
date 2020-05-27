@@ -57,7 +57,7 @@ float3 sample_hemisphere_cos(inout uint seed)
 	return sampleDir;
 }
 
-float TrowbridgeReitz(in float cos2, in float alpha2)
+float TrowbridgeReitzGGX(in float cos2, in float alpha2)
 {
 	float x = alpha2 + (1-cos2)/cos2;
 	return alpha2 / (Pi*cos2*cos2*x*x);

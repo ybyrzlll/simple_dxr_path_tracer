@@ -130,7 +130,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	// Setup camera.
 	{
 		// Initialize the view and projection inverse matrices.
-		m_eye = { 12.0f, 2.5f, 1.0f, 1.0f };
+		m_eye = { 12.0f, 6.5f, 0.0f, 1.0f };
 		m_at = { 0.0f, 1.0f, 0.0f, 1.0f };
 		m_up = { 0.0f, 1.0f, 0.0f, 1.0f };
 
@@ -516,11 +516,11 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	SetAttributes(0, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0),
 		0.1, 0.1, 0.1);//light source
 	SetAttributes(1, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 1, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.1, 0.1, 0.1);//plane
-	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.0f, 0.1, 0.5);
+		0.0, 0.1, 0.1);//plane
+	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		1.0f, 0.1, 0.5);
 	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.5f, 0.3, 0.5);
+		1.0f, 0.3, 0.5);
 	SetAttributes(4, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		1.0f, 0.5, 0.5);
 	SetAttributes(5, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
@@ -535,16 +535,16 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		instance_map[0].index_Mesh = 0;
 		instance_map[1].index_MT = 1;
 		instance_map[1].index_Mesh = 1;
-		instance_map[2].index_MT = 1;
+		instance_map[2].index_MT = 2;
 		instance_map[2].index_Mesh = 2;
-		/*instance_map[3].index_MT = 3;
+		instance_map[3].index_MT = 3;
 		instance_map[3].index_Mesh = 3;
 		instance_map[4].index_MT = 4;
 		instance_map[4].index_Mesh = 4;
 		instance_map[5].index_MT = 5;
 		instance_map[5].index_Mesh = 5;
 		instance_map[6].index_MT = 6;
-		instance_map[6].index_Mesh = 6;*/
+		instance_map[6].index_Mesh = 6;
 	}
 	
 
@@ -609,7 +609,7 @@ void D3D12RaytracingSimpleLighting::BuildSphere()
 	}
 	USES_CONVERSION;
 	CHAR pszMeshFileName[MAX_PATH] = {};
-	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\helmet.obj", T2A(pszAppPath));
+	StringCchPrintfA(pszMeshFileName, MAX_PATH, "%s\\Mesh\\sphere32.obj", T2A(pszAppPath));
 
 	UINT	nVertexCnt, nIndexCnt = 0;
 	vector<Vertex> vertices;
@@ -761,7 +761,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		
 		//Light
 		instanceDesc[0].Transform[0][3] = 0;
-		instanceDesc[0].Transform[1][3] = 5;
+		instanceDesc[0].Transform[1][3] = 9;
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
 		instanceDesc[0].InstanceID = 0;
@@ -805,44 +805,44 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		//sphere
 		instanceDesc[2].Transform[1][3] = -2;
 		instanceDesc[2].Transform[0][3] = 0;
-		instanceDesc[2].Transform[2][3] = 0;// -5;
+		instanceDesc[2].Transform[2][3] = -4;// -5;
 		instanceDesc[2].Transform[0][0] = instanceDesc[2].Transform[1][1] = instanceDesc[2].Transform[2][2] = instanceDesc[2].Transform[3][3] = 0.5;
 		instanceDesc[2].InstanceMask = 1;
 		instanceDesc[2].InstanceID = 2;
 		instanceDesc[2].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
 		//sphere
-		//instanceDesc[3].Transform[1][3] = -2;
-		//instanceDesc[3].Transform[0][3] = 0;
-		//instanceDesc[3].Transform[2][3] = -3;
-		//instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 0.5;
-		//instanceDesc[3].InstanceMask = 1;
-		//instanceDesc[3].InstanceID = 3;
-		//instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
-		////sphere
-		//instanceDesc[4].Transform[1][3] = -2;
-		//instanceDesc[4].Transform[0][3] = 0;
-		//instanceDesc[4].Transform[2][3] = -1;
-		//instanceDesc[4].Transform[0][0] = instanceDesc[4].Transform[1][1] = instanceDesc[4].Transform[2][2] = instanceDesc[4].Transform[3][3] = 0.5;
-		//instanceDesc[4].InstanceMask = 1;
-		//instanceDesc[4].InstanceID = 4;
-		//instanceDesc[4].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
-		////sphere
-		//instanceDesc[5].Transform[1][3] = -2;
-		//instanceDesc[5].Transform[0][3] = 0;
-		//instanceDesc[5].Transform[2][3] = 1;
-		//instanceDesc[5].Transform[0][0] = instanceDesc[5].Transform[1][1] = instanceDesc[5].Transform[2][2] = instanceDesc[5].Transform[3][3] = 0.5;
-		//instanceDesc[5].InstanceMask = 1;
-		//instanceDesc[5].InstanceID = 5;
-		//instanceDesc[5].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		instanceDesc[3].Transform[1][3] = -2;
+		instanceDesc[3].Transform[0][3] = 0;
+		instanceDesc[3].Transform[2][3] = -2;
+		instanceDesc[3].Transform[0][0] = instanceDesc[3].Transform[1][1] = instanceDesc[3].Transform[2][2] = instanceDesc[3].Transform[3][3] = 0.5;
+		instanceDesc[3].InstanceMask = 1;
+		instanceDesc[3].InstanceID = 3;
+		instanceDesc[3].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		//sphere
+		instanceDesc[4].Transform[1][3] = -2;
+		instanceDesc[4].Transform[0][3] = 0;
+		instanceDesc[4].Transform[2][3] = 0;
+		instanceDesc[4].Transform[0][0] = instanceDesc[4].Transform[1][1] = instanceDesc[4].Transform[2][2] = instanceDesc[4].Transform[3][3] = 0.5;
+		instanceDesc[4].InstanceMask = 1;
+		instanceDesc[4].InstanceID = 4;
+		instanceDesc[4].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		//sphere
+		instanceDesc[5].Transform[1][3] = -2;
+		instanceDesc[5].Transform[0][3] = 0;
+		instanceDesc[5].Transform[2][3] = 2;
+		instanceDesc[5].Transform[0][0] = instanceDesc[5].Transform[1][1] = instanceDesc[5].Transform[2][2] = instanceDesc[5].Transform[3][3] = 0.5;
+		instanceDesc[5].InstanceMask = 1;
+		instanceDesc[5].InstanceID = 5;
+		instanceDesc[5].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
-		//instanceDesc[6].Transform[1][3] = -2;
-		//instanceDesc[6].Transform[0][3] = 0;
-		//instanceDesc[6].Transform[2][3] = 3;
-		//instanceDesc[6].Transform[0][0] = instanceDesc[6].Transform[1][1] = instanceDesc[6].Transform[2][2] = instanceDesc[6].Transform[3][3] = 0.5;
-		//instanceDesc[6].InstanceMask = 1;
-		//instanceDesc[6].InstanceID = 6;
-		//instanceDesc[6].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
+		instanceDesc[6].Transform[1][3] = -2;
+		instanceDesc[6].Transform[0][3] = 0;
+		instanceDesc[6].Transform[2][3] = 4;
+		instanceDesc[6].Transform[0][0] = instanceDesc[6].Transform[1][1] = instanceDesc[6].Transform[2][2] = instanceDesc[6].Transform[3][3] = 0.5;
+		instanceDesc[6].InstanceMask = 1;
+		instanceDesc[6].InstanceID = 6;
+		instanceDesc[6].AccelerationStructure = m_bottomLevelAccelerationStructure.structure_pointers[ModelType::Sphere];
 
 
 		UINT64 bufferSize = static_cast<UINT64>(instanceDesc.size() * sizeof(instanceDesc[0]));
