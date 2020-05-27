@@ -130,7 +130,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 	// Setup camera.
 	{
 		// Initialize the view and projection inverse matrices.
-		m_eye = { 12.0f, 6.5f, 0.0f, 1.0f };
+		m_eye = { 20.0f, 8.5f, 0.0f, 1.0f };
 		m_at = { 0.0f, 1.0f, 0.0f, 1.0f };
 		m_up = { 0.0f, 1.0f, 0.0f, 1.0f };
 
@@ -149,7 +149,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 		XMFLOAT4 lightSpecColor;
 		XMFLOAT4 lightDiffuseColor;
 
-		lightPosition = XMFLOAT4(0.0f, 9.8f, 0.0f, 0.0f);
+		lightPosition = XMFLOAT4(0.0f, 6.8f, 0.0f, 0.0f);
 		m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
 		lightSpecColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -513,10 +513,10 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		attributes.roughness = roughness;
 		attributes.specular = specular;
 	};
-	SetAttributes(0, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0),
-		0.1, 0.1, 0.1);//light source
+	SetAttributes(0, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 1),
+		0.0, 0.0, 0.0);//light source
 	SetAttributes(1, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 1, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.0, 0.1, 0.1);//plane
+		1.0, 0.1, 0.1);//plane
 	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		1.0f, 0.1, 0.5);
 	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
@@ -761,7 +761,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		
 		//Light
 		instanceDesc[0].Transform[0][3] = 0;
-		instanceDesc[0].Transform[1][3] = 9;
+		instanceDesc[0].Transform[1][3] = 6;
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
 		instanceDesc[0].InstanceID = 0;

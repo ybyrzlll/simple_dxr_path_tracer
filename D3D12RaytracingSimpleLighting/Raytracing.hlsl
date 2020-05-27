@@ -36,7 +36,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 	}*/
 
 	//Metal
-	if (mtl.metallic >0.8)
+	//if (mtl.metallic >0.8)
 	{
 		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
 		HN = H.z;
@@ -53,8 +53,8 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 		}
 		else
 		{
-			/*float D = Dgtr(mtl.color_specular, HN*HN, alpha2);
-			float G = Gue4(IN, dot(O, N), alpha2);*/
+			//float D = Dgtr(mtl.color_specular, HN*HN, alpha2);
+			//float G = Gue4(IN, dot(O, N), alpha2);
 			float D = TrowbridgeReitzGGX(HN*HN, alpha2);
 			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
 			float4 F = albedo + (1 - albedo) * pow(max(0, 1 - OH), 5);
@@ -63,48 +63,48 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 		}
 	}
 	//Plastic
-	else if (mtl.metallic < 0.8)
-	{
-		/*float metallic;
-		float specular;*/
-		float r = mtl.specular;
+	//else if (mtl.metallic < 0.8)
+	//{
+	//	/*float metallic;
+	//	float specular;*/
+	//	float r = mtl.specular;
 
-		if (rnd(seed) < r)
-		{
-			H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
-			HN = H.z;
-			H = applyRotationMappingZToN(N, H);
-			OH = dot(O, H);
+	//	if (rnd(seed) < r)
+	//	{
+	//		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
+	//		HN = H.z;
+	//		H = applyRotationMappingZToN(N, H);
+	//		OH = dot(O, H);
 
-			I = 2 * OH * H - O;
-			IN = dot(I, N);
-		}
-		else
-		{
-			I = sample_hemisphere_cos(seed);
-			IN = I.z;
-			I = applyRotationMappingZToN(N, I);
+	//		I = 2 * OH * H - O;
+	//		IN = dot(I, N);
+	//	}
+	//	else
+	//	{
+	//		I = sample_hemisphere_cos(seed);
+	//		IN = I.z;
+	//		I = applyRotationMappingZToN(N, I);
 
-			H = O + I;
-			H = (1 / length(H)) * H;
-			HN = dot(H, N);
-			OH = dot(O, H);
-		}
+	//		H = O + I;
+	//		H = (1 / length(H)) * H;
+	//		HN = dot(H, N);
+	//		OH = dot(O, H);
+	//	}
 
-		if (IN < 0)
-		{
-			brdfEval = 0;
-			sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
-		}
-		else
-		{
-			float D = TrowbridgeReitzGGX(HN*HN, alpha2);
-			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
-			float3 spec = ((D * G) / (4 * IN * ON));
-			brdfEval = (r * float4(spec,1) + (1 - r) * InvPi * albedo, 1);
-			sampleProb = r * (D*HN / (4 * OH)) + (1 - r) * (InvPi * IN);
-		}
-	}
+	//	if (IN < 0)
+	//	{
+	//		brdfEval = 0;
+	//		sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
+	//	}
+	//	else
+	//	{
+	//		float D = TrowbridgeReitzGGX(HN*HN, alpha2);
+	//		float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
+	//		float3 spec = ((D * G) / (4 * IN * ON));
+	//		brdfEval = (r * float4(spec,1) + (1 - r) * InvPi * albedo, 1);
+	//		sampleProb = r * (D*HN / (4 * OH)) + (1 - r) * (InvPi * IN);
+	//	}
+	//}
 
 	sampleDir = I;
 	brdfCos = brdfEval * IN;
@@ -261,7 +261,7 @@ void MyRaygenShader()
 		Ray ray;
 		ray.origin = origin;
 		ray.direction = rayDir;
-		color += TraceRadianceRay(ray, 0, seed, 1.0f);
+		color += TraceRadianceRay(ray, 0, seed, float4(1.0f, 1.0f, 1.0f, 1.0f));
 	}
     // Write the raytraced color to the output texture.
     RenderTarget[DispatchRaysIndex().xy] = color / Sample_Num;
@@ -297,7 +297,6 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	if (any(hit.material.emission)) //光源
 	{
 		payload.radiance += hit.material.emission;
-		//return;
 	}
 
 	float3 sampleDir;
@@ -311,9 +310,12 @@ void MyClosestHitShader(inout RayPayload payload, in MyAttributes attr)
 	}
 		
 	Ray sampleRay = { HitWorldPosition(), sampleDir };
-	payload.attenuation = brdfCos / sampleProb;
-	float4 radiance = payload.attenuation * payload.radiance;// brdfCos/sampleProb
-	payload.attenuation *= payload.attenuation;
+	float4 radiance = payload.attenuation * payload.radiance;// 
+	if (!any(hit.material.emission)) //!光源
+	{
+		float4 attenuation = brdfCos / sampleProb;
+		payload.attenuation *= attenuation;
+	}
 
 	float4 sampleColor = TraceRadianceRay(sampleRay, payload.recursionDepth, payload.seed, payload.attenuation);
 	payload.radiance = radiance +sampleColor;
