@@ -492,7 +492,8 @@ void DeviceResources::Prepare(D3D12_RESOURCE_STATES beforeState)
 {
     // Reset command list and allocator.
     ThrowIfFailed(m_commandAllocators[m_backBufferIndex]->Reset());
-    ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_backBufferIndex].Get(), nullptr));
+
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_backBufferIndex].Get(), nullptr));
 
     if (beforeState != D3D12_RESOURCE_STATE_RENDER_TARGET)
     {

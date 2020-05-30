@@ -36,7 +36,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 	}*/
 
 	//Metal
-	//if (mtl.metallic >0.8)
+	if (mtl.metallic >0.8)
 	{
 		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
 		HN = H.z;
@@ -63,48 +63,48 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 		}
 	}
 	//Plastic
-	//else if (mtl.metallic < 0.8)
-	//{
-	//	/*float metallic;
-	//	float specular;*/
-	//	float r = mtl.specular;
+	else if (mtl.metallic < 0.8)
+	{
+		/*float metallic;
+		float specular;*/
+		float r = mtl.specular;
 
-	//	if (rnd(seed) < r)
-	//	{
-	//		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
-	//		HN = H.z;
-	//		H = applyRotationMappingZToN(N, H);
-	//		OH = dot(O, H);
+		if (rnd(seed) < r)
+		{
+			H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
+			HN = H.z;
+			H = applyRotationMappingZToN(N, H);
+			OH = dot(O, H);
 
-	//		I = 2 * OH * H - O;
-	//		IN = dot(I, N);
-	//	}
-	//	else
-	//	{
-	//		I = sample_hemisphere_cos(seed);
-	//		IN = I.z;
-	//		I = applyRotationMappingZToN(N, I);
+			I = 2 * OH * H - O;
+			IN = dot(I, N);
+		}
+		else
+		{
+			I = sample_hemisphere_cos(seed);
+			IN = I.z;
+			I = applyRotationMappingZToN(N, I);
 
-	//		H = O + I;
-	//		H = (1 / length(H)) * H;
-	//		HN = dot(H, N);
-	//		OH = dot(O, H);
-	//	}
+			H = O + I;
+			H = (1 / length(H)) * H;
+			HN = dot(H, N);
+			OH = dot(O, H);
+		}
 
-	//	if (IN < 0)
-	//	{
-	//		brdfEval = 0;
-	//		sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
-	//	}
-	//	else
-	//	{
-	//		float D = TrowbridgeReitzGGX(HN*HN, alpha2);
-	//		float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
-	//		float3 spec = ((D * G) / (4 * IN * ON));
-	//		brdfEval = (r * float4(spec,1) + (1 - r) * InvPi * albedo, 1);
-	//		sampleProb = r * (D*HN / (4 * OH)) + (1 - r) * (InvPi * IN);
-	//	}
-	//}
+		if (IN < 0)
+		{
+			brdfEval = 0;
+			sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
+		}
+		else
+		{
+			float D = TrowbridgeReitzGGX(HN*HN, alpha2);
+			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
+			float3 spec = ((D * G) / (4 * IN * ON));
+			brdfEval = (r * float4(spec,1) + (1 - r) * InvPi * albedo, 1);
+			sampleProb = r * (D*HN / (4 * OH)) + (1 - r) * (InvPi * IN);
+		}
+	}
 
 	sampleDir = I;
 	brdfCos = brdfEval * IN;
