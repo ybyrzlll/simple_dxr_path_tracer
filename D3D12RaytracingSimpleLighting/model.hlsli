@@ -150,3 +150,12 @@ float4 SpecularShade(in float3 SpecColor, in float Roughness, in float3 L, in fl
 	float VoH = saturate(InvLenH + InvLenH * VoL); //saturate(dot(N, normalize(N+L)));//
 	return float4(Cook_Torrance2(SpecColor, Roughness, NoV, NoL, VoH, NoH), 1.0);
 }
+
+//***************************************************************************
+//********************------ Helper -------*************************
+//***************************************************************************
+//float GetSpecularEventProbability(float3 SpecularColor, float NoV)
+//{
+//	float3 F = F_Schlick(SpecularColor, NoV);
+//	return (F.x + F.y + F.z) / 3.f;
+//}

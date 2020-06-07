@@ -513,20 +513,20 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		attributes.roughness = roughness;
 		attributes.specular = specular;
 	};
-	SetAttributes(0, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 1, 1),
+	SetAttributes(0, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 1),
 		0.0, 0.0, 0.0);//light source
 	SetAttributes(1, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		1.0, 0.1, 0.5);//plane
+		1.0f, 0.1, 0.5);//plane
 	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.0f, 0.1, 0.1);
+		1.0f, 0.1, 0.1);
 	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.0f, 0.1, 0.3);
+		1.0f, 0.3, 0.3);
 	SetAttributes(4, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.0f, 0.1, 0.5);
+		1.0f, 0.5, 0.5);
 	SetAttributes(5, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.0f, 0.1, 0.7);
+		1.0f, 0.7, 0.7);
 	SetAttributes(6, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.0f, 0.1, 0.9);
+		1.0f, 0.9, 0.9);
 
 	//Instance ≈‰÷√mesh material
 	instance_map.resize(NumInstance);
