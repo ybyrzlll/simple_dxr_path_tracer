@@ -122,14 +122,5 @@ inline bool srefract(in float3 v, in float3 n, in float ni_over_nt, out float3 r
   return false;
 }
 
-//------------------------------------------------------------------------------------------------------
-inline float schlick(in float cosine, in float index_of_refraction)
-{
-  float r0 = (1 - index_of_refraction) / (1 + index_of_refraction);
-  r0 = r0 * r0;
-  return r0 + (1 - r0) * pow((1 - cosine), 5);
-}
-
-
 
 #endif
