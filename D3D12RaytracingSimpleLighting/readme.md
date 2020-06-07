@@ -1,6 +1,8 @@
 # Path Tracing
 [![sss](ScreenShot1.png)]()
 
+	just for learning
+
 ## Features
 
 * Path Tracing

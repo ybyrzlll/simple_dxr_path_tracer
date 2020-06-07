@@ -1,14 +1,3 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
 #pragma once
 
 #include "DXSample.h"
@@ -36,12 +25,6 @@ namespace LocalRootSignatureParams {
     };
 }
 
-// The sample supports both Raytracing Fallback Layer and DirectX Raytracing APIs. 
-// This is purely for demonstration purposes to show where the API differences are. 
-// Real-world applications will implement only one or the other. 
-// Fallback Layer uses DirectX Raytracing if a driver and OS supports it. 
-// Otherwise, it falls back to compute pipeline to emulate raytracing.
-// Developers aiming for a wider HW support should target Fallback Layer.
 class D3D12RaytracingSimpleLighting : public DXSample
 {
     enum class RaytracingAPI {
