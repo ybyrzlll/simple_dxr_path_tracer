@@ -67,28 +67,15 @@ float3 Diffuse_Burley(float3 DiffuseColor, float Roughness, float NoV, float NoL
 	return DiffuseColor * ((1 / PI) * FdV * FdL);
 }
 
-// Fresnel reflectance - schlick approximation.
-float3 F_Schlick(in float3 SpecularColor, in float VoH)
+// [Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"]
+float3 F_Schlick(float3 SpecularColor, float VoH)
 {
 	float Fc = Pow5(1 - VoH);					// 1 sub, 3 mul
 	//return Fc + (1 - Fc) * SpecularColor;		// 1 add, 3 mad
 
 	// Anything less than 2% is physically impossible and is instead considered to be shadowing
 	return saturate(50.0 * SpecularColor.g) * Fc + (1 - Fc) * SpecularColor;
-}
 
-// Fresnel reflectance - schlick approximation.
-float3 F_Schlick2(in float3 SpecularColor, in float3 V, in float3 L)
-{
-	float VoL = dot(V, L);
-	float InvLenH = rsqrt(2 + 2 * VoL);
-	float VoH = saturate(InvLenH + InvLenH * VoL);
-
-	float Fc = Pow5(1 - VoH);					// 1 sub, 3 mul
-	//return Fc + (1 - Fc) * SpecularColor;		// 1 add, 3 mad
-
-	// Anything less than 2% is physically impossible and is instead considered to be shadowing
-	return saturate(50.0 * SpecularColor.g) * Fc + (1 - Fc) * SpecularColor;
 }
 
 float Vis_Schlick(float a2, float NoV, float NoL)
@@ -154,8 +141,43 @@ float4 SpecularShade(in float3 SpecColor, in float Roughness, in float3 L, in fl
 //***************************************************************************
 //********************------ Helper -------*************************
 //***************************************************************************
-//float GetSpecularEventProbability(float3 SpecularColor, float NoV)
-//{
-//	float3 F = F_Schlick(SpecularColor, NoV);
-//	return (F.x + F.y + F.z) / 3.f;
-//}
+float GetSpecularEventProbability(float3 SpecularColor, float NoV)
+{
+	float3 F = F_Schlick(SpecularColor, NoV);
+	return (F.x + F.y + F.z) / 3.f;
+}
+
+// [ Duff et al. 2017, "Building an Orthonormal Basis, Revisited" ]
+float3x3 GetTangentBasis(float3 TangentZ)
+{
+	const float Sign = TangentZ.z >= 0 ? 1 : -1;
+	const float a = -rcp(Sign + TangentZ.z);
+	const float b = TangentZ.x * TangentZ.y * a;
+
+	float3 TangentX = { 1 + Sign * a * pow(TangentZ.x, 2), Sign * b, -Sign * TangentZ.x };
+	float3 TangentY = { b,  Sign + a * pow(TangentZ.y, 2), -TangentZ.y };
+
+	return float3x3(TangentX, TangentY, TangentZ);
+}
+
+float3 TangentToWorld(float3 Vec, float3 TangentZ)
+{
+	return mul(Vec, GetTangentBasis(TangentZ));
+}
+
+float3 WorldToTangent(float3 Vec, float3 TangentZ)
+{
+	return mul(GetTangentBasis(TangentZ), Vec);
+}
+
+bool IsNanOrNotFinite(float p)
+{
+	//return (!isfinite(p) || isnan(p));
+	// Work around lack of support fo isnan and isfinite in current compiler
+	return (asuint(p) & (0xFF << 23)) == (0xFF << 23);
+}
+
+float ClampIfInvalid(float p)
+{
+	return IsNanOrNotFinite(p) ? 10000000 : p;
+}
