@@ -1,5 +1,3 @@
-
-
 #include "stdafx.h"
 #include "D3D12RaytracingSimpleLighting.h"
 #include "DirectXRaytracingHelper.h"
