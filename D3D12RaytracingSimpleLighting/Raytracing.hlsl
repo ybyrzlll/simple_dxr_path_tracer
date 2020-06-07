@@ -101,7 +101,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 			float D = TrowbridgeReitzGGX(HN*HN, alpha2);
 			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
 
-			float4 albedo_dielectric =  float4(0.08f, 0.08f, 0.08f, 1.0f) * mtl.specular *50;
+			float4 albedo_dielectric = float4(0.08f, 0.08f, 0.08f, 1.0f) * mtl.specular *100;
 
 			float metallic = mtl.metallic;
 			float4 Rf = (1 - metallic) * albedo_dielectric + metallic * albedo;
