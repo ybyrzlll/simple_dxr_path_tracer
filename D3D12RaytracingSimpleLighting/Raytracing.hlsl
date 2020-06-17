@@ -18,7 +18,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 {
 
 	float4 brdfEval;
-	float4 albedo = mtl.color_diffuse;
+	float4 diffuse_color = mtl.baseColor * (1 - mtl.metallic);
 	float metallic = mtl.metallic;
 
 	float3 I, O = baseDir, N = surfaceNormal, H;
@@ -26,14 +26,14 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 	float alpha2 = mtl.roughness * mtl.roughness;
 
 	//if (reflectType == Lambertian)
-	/*{
+	{
 		I = sample_hemisphere_cos(seed);
 		IN = I.z;
 		I = applyRotationMappingZToN(N, I);
 
 		sampleProb = InvPi * IN;
-		brdfEval = InvPi * albedo;
-	}*/
+		brdfEval = InvPi * diffuse_color;
+	}
 
 	//Metal
 	//if (mtl.metallic >0.8)
@@ -119,54 +119,54 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 	//	}
 	//}
 
-	float4 diffuse_color = mtl.color_diffuse * (1 - mtl.metallic);
+	//float4 diffuse_color = mtl.baseColor * (1 - mtl.metallic);
 
-	float4 albedo_dielectric = float4(0.08f, 0.08f, 0.08f, 1.0f) * mtl.specular * 100;
-	float4 SpecularColor = (1 - metallic) * albedo_dielectric + metallic * albedo;
+	//float4 albedo_dielectric = float4(0.08f, 0.08f, 0.08f, 1.0f) * mtl.specular * 100;
+	//float4 SpecularColor = (1 - metallic) * albedo_dielectric + metallic * albedo;
 
-	float3 V_World = normalize(-WorldRayDirection());
-	float3 V = WorldToTangent(V_World, N);
-	const float NoV = V.z;
-	const float ProbSpecular = GetSpecularEventProbability(SpecularColor, NoV);
+	//float3 V_World = normalize(-WorldRayDirection());
+	//float3 V = WorldToTangent(V_World, N);
+	//const float NoV = V.z;
+	//const float ProbSpecular = GetSpecularEventProbability(SpecularColor, NoV);
 
-	//if (rnd(seed) < ProbSpecular) 
-	{
-		H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
-		HN = H.z;
-		H = applyRotationMappingZToN(N, H);
-		OH = dot(O, H);
+	//if (rnd(seed) < ProbSpecular) // ProbSpecular
+	//{
+	//	H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
+	//	HN = H.z;
+	//	H = applyRotationMappingZToN(N, H);
+	//	OH = dot(O, H);
 
-		I = 2 * OH * H - O;
-		IN = dot(I, N);
-		if (IN < 0)
-		{
-			brdfEval = 0;
-			sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
-		}
-		else {
-			float D = TrowbridgeReitzGGX(HN*HN, alpha2);
-			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
-			//float4 F = float4(F_Schlick(SpecularColor, dot(V, H)), 1.0f);
-			float4 Rf = (1 - metallic) * albedo_dielectric + metallic * albedo;
-			float4 F = Rf + (1 - Rf) * pow(max(0, 1 - OH), 5);
-			brdfEval = ((D * G) / (4 * IN * ON)) * F;
-			sampleProb =  ProbSpecular;
-		}
-	}
-	/*else 
-	{
-		I = sample_hemisphere_cos(seed);
-		IN = I.z;
-		I = applyRotationMappingZToN(N, I);
+	//	I = 2 * OH * H - O;
+	//	IN = dot(I, N);
+	//	if (IN < 0)
+	//	{
+	//		brdfEval = 0;
+	//		sampleProb = 0;		//sampleProb = r * (D*HN / (4*abs(OH)));  if allowing sample negative hemisphere
+	//	}
+	//	else {
+	//		float D = TrowbridgeReitzGGX(HN*HN, alpha2);
+	//		float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
+	//		//float4 F = float4(F_Schlick(SpecularColor, dot(V, H)), 1.0f);
+	//		float4 Rf = (1 - metallic) * albedo_dielectric + metallic * albedo;
+	//		float4 F = Rf + (1 - Rf) * pow(max(0, 1 - OH), 5);
+	//		brdfEval = ((D * G) / (4 * IN * ON)) * F;
+	//		sampleProb =  ProbSpecular;
+	//	}
+	//}
+	//else 
+	//{
+	//	I = sample_hemisphere_cos(seed);
+	//	IN = I.z;
+	//	I = applyRotationMappingZToN(N, I);
 
-		H = O + I;
-		H = (1 / length(H)) * H;
-		HN = dot(H, N);
-		OH = dot(O, H);
+	//	H = O + I;
+	//	H = (1 / length(H)) * H;
+	//	HN = dot(H, N);
+	//	OH = dot(O, H);
 
-		brdfEval = diffuse_color;
-		sampleProb = 1.0f - ProbSpecular;
-	}*/
+	//	brdfEval = diffuse_color;
+	//	sampleProb = 1.0f - ProbSpecular;
+	//}
 	
 	sampleDir = I;
 	brdfCos = brdfEval * IN;

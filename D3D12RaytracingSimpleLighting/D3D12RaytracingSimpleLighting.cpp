@@ -138,7 +138,7 @@ void D3D12RaytracingSimpleLighting::InitializeScene()
 		XMFLOAT4 lightSpecColor;
 		XMFLOAT4 lightDiffuseColor;
 
-		lightPosition = XMFLOAT4(0.0f, 6.8f, 0.0f, 0.0f);
+		lightPosition = XMFLOAT4(4.0f, 6.8f, 0.0f, 0.0f);
 		m_sceneCB[frameIndex].lightPosition = XMLoadFloat4(&lightPosition);
 
 		lightSpecColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -484,7 +484,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	auto SetAttributes = [&](
 		UINT primitiveIndex,
 		const XMFLOAT4& color_ambient,
-		const XMFLOAT4& color_diffuse,
+		const XMFLOAT4& baseColor,
 		const XMFLOAT4& color_emissive,
 		const XMFLOAT4& color_specular,
 		const XMFLOAT4& emission,
@@ -494,7 +494,7 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	{
 		auto& attributes = materials[primitiveIndex];
 		attributes.color_ambient = color_ambient;
-		attributes.color_diffuse = color_diffuse;
+		attributes.baseColor = baseColor;
 		attributes.color_emissive = color_emissive;
 		attributes.color_specular = color_specular;
 		attributes.emission = emission;
@@ -507,15 +507,15 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	SetAttributes(1, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		0.1f, 0.1, 0.5);//plane
 	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.6f, 0.1, 0.5);
-	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.6f, 0.3, 0.5);
-	SetAttributes(4, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.6f, 0.5, 0.5);
+		0.1f, 0.5, 0.5);
+	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.3f, 0.5, 0.5);
+	SetAttributes(4, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.5f, 0.5, 0.5);
 	SetAttributes(5, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.6f, 0.7, 0.5);
+		0.7f, 0.5, 0.5);
 	SetAttributes(6, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.6f, 0.9, 0.5);
+		0.9f, 0.5, 0.5);
 
 	//Instance ≈‰÷√mesh material
 	instance_map.resize(NumInstance);
@@ -751,6 +751,7 @@ void D3D12RaytracingSimpleLighting::BuildAccelerationStructures()
 		//Light
 		instanceDesc[0].Transform[0][3] = 0;
 		instanceDesc[0].Transform[1][3] = 6;
+		instanceDesc[0].Transform[2][3] = 0;// -12;
 		instanceDesc[0].Transform[0][0] = instanceDesc[0].Transform[1][1] = instanceDesc[0].Transform[2][2] = instanceDesc[0].Transform[3][3] = 1;
 		instanceDesc[0].InstanceMask = 1;
 		instanceDesc[0].InstanceID = 0;
