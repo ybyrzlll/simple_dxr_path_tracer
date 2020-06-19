@@ -27,7 +27,7 @@ using namespace DirectX;
 // as drivers may apply optimization strategies for low recursion depths.
 #define MAX_RAY_RECURSION_DEPTH 4    // ~ primary rays + reflections + shadow rays from reflected geometry.
 
-#define Sample_Num 50
+#define Sample_Num 40
 
 #define PI 3.1415926535
 

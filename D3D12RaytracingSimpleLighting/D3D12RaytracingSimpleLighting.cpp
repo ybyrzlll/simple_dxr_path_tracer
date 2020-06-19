@@ -368,7 +368,7 @@ void D3D12RaytracingSimpleLighting::CreateRaytracingPipelineStateObject()
 	UINT t1 = sizeof(test.color), t2 = sizeof(test.recursionDepth), t3 = sizeof(a);*/
 	UINT payloadSize = max(sizeof(RayPayload), sizeof(ShadowRayPayload));
 	// The maximum number of scalars (counted as 4 bytes each) that can be used for attributes in pipelines that contain this shader. The value cannot exceed D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES.
-	UINT attributeSize = 2 * 4;
+	UINT attributeSize = D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES;// 3 * 4;
 	shaderConfig->Config(payloadSize, attributeSize);
 
 	// Local root signature and shader association
@@ -504,17 +504,17 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 	};
 	SetAttributes(0, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 1),
 		0.0, 0.0, 0.0);//light source
-	SetAttributes(1, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+	SetAttributes(1, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.75, 0.25, 0.25, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		0.1f, 0.1, 0.5);//plane
-	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.01, 0.99, 0.99, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		0.1f, 0.5, 0.5);
-	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.01, 0.99, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		0.3f, 0.5, 0.5);
-	SetAttributes(4, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 0, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+	SetAttributes(4, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.01, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		0.5f, 0.5, 0.5);
-	SetAttributes(5, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+	SetAttributes(5, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.99, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		0.7f, 0.5, 0.5);
-	SetAttributes(6, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1, 1, 1, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+	SetAttributes(6, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.99, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		0.9f, 0.5, 0.5);
 
 	//Instance ≈‰÷√mesh material
