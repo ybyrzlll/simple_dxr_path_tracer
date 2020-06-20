@@ -506,16 +506,16 @@ void D3D12RaytracingSimpleLighting::BuildGeometry()
 		0.0, 0.0, 0.0);//light source
 	SetAttributes(1, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.75, 0.25, 0.25, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
 		0.1f, 0.1, 0.5);//plane
-	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.01, 0.99, 0.99, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.1f, 0.5, 0.5);
-	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.01, 0.99, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.3f, 0.5, 0.5);
+	SetAttributes(2, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.01, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.1f, 0.1, 0.1);
+	SetAttributes(3, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.01, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.3f, 0.1, 0.3);
 	SetAttributes(4, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.01, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.5f, 0.5, 0.5);
-	SetAttributes(5, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.99, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.7f, 0.5, 0.5);
-	SetAttributes(6, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.99, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
-		0.9f, 0.5, 0.5);
+		0.5f, 0.1, 0.5);
+	SetAttributes(5, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.01, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.7f, 0.1, 0.7);
+	SetAttributes(6, XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.99, 0.99, 0.01, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0, 0, 0, 0),
+		0.9f, 0.1, 0.9);
 
 	//Instance ≈‰÷√mesh material
 	instance_map.resize(NumInstance);

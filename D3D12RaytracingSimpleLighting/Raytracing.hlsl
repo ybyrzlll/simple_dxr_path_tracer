@@ -66,7 +66,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 	{
 		float r = mtl.specular;
 
-		//if (rnd(seed) < r)
+		if (rnd(seed) < r)
 		{
 			H = sample_hemisphere_TrowbridgeReitzCos(alpha2, seed);
 			HN = H.z;
@@ -76,18 +76,21 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 			I = 2 * OH * H - O;
 			IN = dot(I, N);
 
-			float D = TrowbridgeReitzGGX(HN*HN, alpha2);
-			float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
+			//float D = TrowbridgeReitzGGX(HN*HN, alpha2);
+			//float G = Smith_TrowbridgeReitz(I, O, H, N, alpha2);
 
-			float4 albedo_dielectric = float4(0.08f, 0.08f, 0.08f, 1.0f) * mtl.specular * 50;
+			//float4 albedo_dielectric = float4(0.08f, 0.08f, 0.08f, 1.0f) * mtl.specular * 50;
 
-			float metallic = mtl.metallic;
-			float4 Rf = (1 - metallic) * albedo_dielectric + metallic * mtl.baseColor;
-			float4 F = Rf + (1 - Rf) * pow(max(0, 1 - OH), 5);
-			brdfEval = ((D * G) / (4 * IN * ON)) * F;
-			sampleProb = D * HN / (4 * OH);
+			//float metallic = mtl.metallic;
+			//float4 Rf = (1 - metallic) * albedo_dielectric + metallic * mtl.baseColor;
+			////float4 F = Rf + (1 - Rf) * pow(max(0, 1 - OH), 5);
+			//float4 F = mtl.baseColor + (1 - mtl.baseColor) * pow(max(0, 1 - OH), 5);
+			//brdfEval = ((D * G) / (4 * IN * ON)) * F;
+			//sampleProb = D * HN / (4 * OH);
+			sampleProb = IN;
+			brdfEval = mtl.baseColor;
 		}
-		/*else
+		else
 		{
 			I = sample_hemisphere_cos(seed);
 			IN = I.z;
@@ -95,7 +98,7 @@ void samplingBRDF(out float3 sampleDir, out float sampleProb, out float4 brdfCos
 
 			sampleProb = IN;
 			brdfEval = mtl.baseColor;
-		}*/
+		}
 	}
 
 	//float4 diffuse_color = mtl.baseColor * (1 - mtl.metallic);
